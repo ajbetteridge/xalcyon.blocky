@@ -1,0 +1,70 @@
+* About
+
+MicroXONG is a retro-remake of [[http://dto.github.com/notebook/xong.html][XONG]] with graphics, sound, and controls
+similar to those of an Intellivison or Atari 5200 game from the bygone
+era of 8-bit games, but with OpenGL transparency and scaling added to
+the mix. 
+
+You are a vulnerable white square that can move only in the four
+cardinal directions (using the arrow keys, numpad, or gamepad). Using
+the spacebar (or joystick button) you can fire a bullet in the
+direction you last moved. (This direction is indicated by a little dot
+on the player's sprite.) 
+
+One hit kills you, and completely ends your game---to win at MicroXONG
+you must reach the end without taking a single bullet from an enemy or
+touching a single hot zone. A successful game of SuperXONG should be
+able to be completed in less than 20 minutes. Player lives are
+disposable, and pressing ESCAPE after death will instantly begin a new
+game.
+
+You must infiltrate an enemy research facility with four increasingly
+difficult levels. Each level is semi-randomly generated as in a
+roguelike, but levels are not entirely grid-based. Your goal is to
+defeat all enemies, retrieve one or more encrypted data files, and
+transmit them back to your home base at a terminal located somewhere
+on each level. Each transmission results in a random bit of story
+being shown to the player in the form of a fictional email, and a
+story could be sketched in this way with a small library of these
+emails.
+
+Your character is trailed by a positronic filament "tail" (represented
+by a yellow line following your square) which can destroy bullets and
+certain other moving objects. By sweeping the filament across the path
+of an oncoming particle or bullet, you can annihilate them and reduce
+the danger level. The tail is not overly long (this would make the
+game too easy) and cannot be extended.
+
+An energy meter is shown at the bottom corner of the game window as a
+segmented horizontal bar with an E next to it. Energy is required to
+fire your bullets, and when your energy is too low, the tail shield
+will not function and you will be more vulnerable.
+
+You can regain energy by grabbing an "E" powerup (these should be
+somewhat scarce) or by absorbing particles with your tail.
+
+Your bullets bounce back and forth along a line (either horizontal or
+vertical.) You can catch your own bullets, which restores an
+equivalent amount of energy. So part of the strategy will be in
+destroying colorful blocks and/or objects in paddle-and-brick-game
+fashion.
+
+Your bullets don't directly kill enemies---instead you must trigger
+bombs when they pass by, or direct the enemies into incinerators.
+
+There are forcefield doors between some rooms that open when shot with
+a bullet, and close after a few seconds. Colliding with the forcefield
+kills you.
+
+Player speed should be 1 pixel when shift is held (use in danger areas.)
+
+** Difficulty A/B
+** Red
+
+
+
+
+
+
+
+
