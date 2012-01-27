@@ -1,0 +1,13 @@
+This is the COPYING file for the remixable example game XALCYON.BLOCKY.
+
+As specified in the included file "xalcyon.lisp", the Lisp code in this
+game is provided to you under the terms of the GNU General Public
+License, Version 3:
+
+http://www.gnu.org/licenses/gpl.html
+
+The music (.ogg files) sound effects (.wav files) and images (.png
+files) in XALCYON.BLOCKY are provided to you under the terms of the
+CC-BY-NC-ND license: 
+
+http://creativecommons.org/licenses/by-nc-nd/3.0/

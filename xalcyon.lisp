@@ -1,4 +1,4 @@
-;;; xong.lisp --- micro-xong, a mini implementation of a xong-like
+;;; xalcyon.lisp --- micro-xalcyon, a mini implementation of a xalcyon-like
 
 ;; Copyright (C) 2010, 2011, 2012  David O'Toole
 
@@ -23,7 +23,7 @@
 ;; We should define a package to hold all the names in our project.
 ;; Common Lisp "packages" are akin to namespaces in other languages.
 
-(defpackage :xong 
+(defpackage :xalcyon 
   (:use :blocky :common-lisp))
 
 ;; The ":use" statement above means that we will be using names from
@@ -31,21 +31,21 @@
 
 ;; Now we start using our new package.
 
-(in-package :xong)
+(in-package :xalcyon)
 
 ;; Let's set a few global variables to configure the game session.
 ;; Global variables have asterisks surrounding the name *like-this*
 
 (setf *screen-width* 800)
 (setf *screen-height* 600)
-(setf *window-title* "MicroXONG")
+(setf *window-title* "MicroXALCYON")
 (setf *use-antialiased-text* nil)
 (setf *use-nominal-screen-size* t) ;; scale the image to the window-size
 (setf *frame-rate* 30)
 
 ;; Now we define some variables of our own with `defvar'.
 
-(defvar *xong-font* "sans-mono-bold-16") ;; one of the included fonts
+(defvar *xalcyon-font* "sans-mono-bold-16") ;; one of the included fonts
 
 (defvar *score* 0)
 
@@ -62,7 +62,7 @@
 (define-method draw score-display ()
   (draw-string (prin1-to-string %points)
 	       %x %y :color (random-choose '("magenta" "cyan" "yellow" "red" "white"))
-		     :font *xong-font*))
+		     :font *xalcyon-font*))
 
 (defun score (&optional (points 50) x y)
   (incf *score* points)
@@ -75,16 +75,11 @@
   
 (defparameter *soundtrack* 
   (defresource 
-      (:name "toybox" :type :music :file "toybox.ogg")
-    (:name "metro" :type :music :file "metro.ogg" :properties (:volume 20))
-    (:name "crisis" :type :music :file "crisis.ogg")
-    (:name "next" :type :music :file "next.ogg")
-    (:name "conspiracy" :type :music :file "conspiracy.ogg")
-    (:name "flyby" :type :music :file "flyby.ogg")
-    (:name "sparqq" :type :music :file "sparqq.ogg")
-    (:name "purity" :type :music :file "purity.ogg" :properties (:volume 25))
-    (:name "xiomacs" :type :music :file "xiomacs.ogg")
-    (:name "ancients" :type :music :file "ancients.ogg")))
+    (:name "beatup" :type :music :file "beatup.ogg")
+    (:name "defmacron" :type :music :file "defmacron.ogg")
+    (:name "ompula" :type :music :file "ompula.ogg")
+    (:name "wraparound" :type :music :file "wraparound.ogg")
+    (:name "xalcyon" :type :music :file "xalcyon.ogg")))
 
 ;;; Colored, themeable bricks that make up the environment
 
@@ -111,7 +106,7 @@
   (setf %color color))
 
 (defmacro defbrick (name &body body)
-  `(define-block (,name :super "XONG:BRICK")
+  `(define-block (,name :super "XALCYON:BRICK")
      ,@body))
 
 (defun is-brick (thing)
@@ -592,23 +587,23 @@
 		 (+ 400 (random 500))))))
 
 (define-method reset reactor ()
-  (xong))
+  (xalcyon))
 
 (define-method draw reactor ()
   (draw%%world self)
   (multiple-value-bind (top left right bottom)
       (window-bounding-box self)
     (let ((x (+ left (dash 5)))
-	  (y (- bottom (font-height *xong-font*) (dash 2)))
+	  (y (- bottom (font-height *xalcyon-font*) (dash 2)))
 	  (label (format nil "~d" *score*)))
       (draw-string label 
 		   x y :color "white"
-		   :font *xong-font*))))
+		   :font *xalcyon-font*))))
 
 ;; Last, we define the startup function (whose name should be the same
 ;; as the package.)
 
-(defun xong ()
+(defun xalcyon ()
   (let ((robot (new robot))
 	(reactor (new reactor)))
     (set-location robot 110 110)
@@ -620,4 +615,4 @@
     (build reactor)
     (play-music (random-choose *soundtrack*) :loop t)))
 
-;;; xong.lisp ends here
+;;; xalcyon.lisp ends here
