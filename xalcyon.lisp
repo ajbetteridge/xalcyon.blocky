@@ -20,30 +20,17 @@
 
 ;;; Preamble
 
-;; We should define a package to hold all the names in our project.
-;; Common Lisp "packages" are akin to namespaces in other languages.
-
 (defpackage :xalcyon 
   (:use :blocky :common-lisp))
 
-;; The ":use" statement above means that we will be using names from
-;; Blocky as well as those from Common Lisp itself.
-
-;; Now we start using our new package.
-
 (in-package :xalcyon)
-
-;; Let's set a few global variables to configure the game session.
-;; Global variables have asterisks surrounding the name *like-this*
 
 (setf *screen-width* 800)
 (setf *screen-height* 600)
 (setf *window-title* "MicroXALCYON")
 (setf *use-antialiased-text* nil)
-(setf *use-nominal-screen-size* t) ;; scale the image to the window-size
+(setf *scale-output-to-window* t)
 (setf *frame-rate* 30)
-
-;; Now we define some variables of our own with `defvar'.
 
 (defvar *xalcyon-font* "sans-mono-bold-16") ;; one of the included fonts
 
@@ -72,7 +59,9 @@
 
 (defun reset-score ()
   (setf *score* 0))
-  
+ 
+;;; Musical accompaniment
+ 
 (defparameter *soundtrack* 
   (defresource 
     (:name "beatup" :type :music :file "beatup.ogg")
@@ -233,7 +222,7 @@
     (:name "monitor2" :type :image :file "monitor2.png"))
 
 (define-block monitor 
-  (hit-points :initform 1)
+  (hit-points :initform 1) fleeing
   (direction :initform (random-choose '(:up :down :right :left)))
   (tags :initform '(:monitor :enemy))
   (image :initform "monitor2"))
@@ -248,23 +237,41 @@
 	    (getf '(:up :left :left :down :down :right :right :up)
 		  (or %direction :up)))))
 
-(define-method update monitor ()
-  (if (< (distance-to-player self) 160)
-      (progn (setf %direction (direction-to-player self))
-	     (percent-of-time 2
-	       (fire self (+ (heading-to-player self) 10))
-			     ;; a little randomness to sometimes lead player
+(define-method flee monitor ()
+  (setf %heading (+ pi (heading-to-player self)))
+  (move-forward self 2))
 
-;	       (later 2 (move-toward self %direction 0.2))
-	       (play-sound self (defresource :name "magenta-alert"
-					 :type :sample :file "magenta-alert.wav" 
-					 :properties (:volume 40)))))
-      (move-toward self %direction 0.5)))
+(define-method stop-fleeing monitor ()
+  (setf %fleeing nil))
+
+(define-method hunt monitor ()
+  (let ((dist (distance-to-player self)))
+    ;; hunt for player
+    (if (< dist 160)
+	(progn 
+	  (setf %heading (heading-to-player self))
+	  (move-forward self 2)
+	  ;; if close enough, fire and run away 
+	  (when (< dist 90)
+	    (fire self (heading-to-player self))
+	    (setf %fleeing t)
+	    (later 1.4 (stop-fleeing self))
+	    (play-sound self (defresource :name "magenta-alert"
+					  :type :sample :file "magenta-alert.wav" 
+					  :properties (:volume 60)))))
+	;; patrol
+	(move-toward self %direction 2))))
+
+(define-method update monitor ()
+  (if %fleeing 
+      (flee self)
+      (hunt self)))
 
 (define-method collide monitor (thing)
   (when (is-robot thing)
     (damage thing 1))
   (restore-location self)
+;  (when %fleeing (setf %fleeing nil))
   (choose-new-direction self))
 
 (define-method damage monitor (points)
