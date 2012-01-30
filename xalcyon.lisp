@@ -25,11 +25,11 @@
 
 (in-package :xalcyon)
 
-(setf *screen-width* 800)
-(setf *screen-height* 600)
-(setf *window-title* "MicroXALCYON")
+(setf *screen-width* 1280)
+(setf *screen-height* 720)
+(setf *window-title* "Xalcyon")
 (setf *use-antialiased-text* nil)
-(setf *scale-output-to-window* t)
+(setf *scale-output-to-window* nil)
 (setf *frame-rate* 30)
 
 (defvar *xalcyon-font* "sans-mono-bold-16") ;; one of the included fonts
@@ -41,9 +41,7 @@
 (define-block score-display points) 
 
 (define-method initialize score-display (&optional (points 100))
-  ;; %foo means (field-value :foo self), i.e. this.foo in other languages
   (setf %points points)
-  ;; send the message :DESTROY to SELF after 1.3 seconds
   (later 1.3 (destroy self)))
 
 (define-method draw score-display ()
@@ -433,6 +431,14 @@
   (and (blockyp thing)
        (has-tag thing :robot)))
 
+(defparameter *button-bindings* 
+  '((:joystick (:right-trigger :button-down) "fire .")
+    (:joystick (:right-trigger :button-up) "stop-firing .")
+    (:joystick (:left-bumper :button-down) "boost .")
+    (:joystick (:left-bumper :button-up) "stop-boosting .")))
+    ;; (:joystick (:x :button-down) "act .")
+    ;; (:joystick (:y :button-down) "cancel .")))
+
 (define-block robot 
   (dead :initform nil)
   (ready :initform t)
@@ -488,46 +494,24 @@
     (change-image self (defresource :name "skull" :type :image :file "skull.png"))))
 
 (define-method collide robot (thing)
-  ;; (setf %collided-with thing)
   (when (is-brick thing)
     (restore-location self)))
 
-(defun holding-down-arrow ()
-  (or (keyboard-down-p :kp2)
-      (keyboard-down-p :down)))
+;;; Robot controls
 
-(defun holding-up-arrow ()
-  (or (keyboard-down-p :kp8)
-      (keyboard-down-p :up)))
-
-(defun holding-left-arrow ()
-  (or (keyboard-down-p :kp4)
-      (keyboard-down-p :left)))
-
-(defun holding-right-arrow ()
-  (or (keyboard-down-p :kp6)
-      (keyboard-down-p :right)))
-
-(defun holding-space ()
-  (keyboard-down-p :space))     
-
-(define-method aim robot (dir)
-  (setf %direction dir))
+(define-method aim robot (angle)
+  (setf %heading angle))
 
 (define-method update robot ()
   (when (not %dead)
-    (let ((direction
-	    (cond 
-	      ((holding-down-arrow) :down)
-	      ((holding-up-arrow) :up)
-	      ((holding-left-arrow) :left)
-	      ((holding-right-arrow) :right))))
-      (when direction
-	(move self direction))
-      (if (holding-space)
-	  (fire self %direction)
-	  (when direction 
-	    (aim self direction))))))
+    (when (left-analog-stick-pressed-p)
+      (let ((heading (left-analog-stick-heading)))
+	(aim self heading)
+	(move-forward self 3)))))
+      ;; (if (holding-space)
+      ;; 	  (fire self %direction)
+      ;; 	  (when direction 
+      ;; 	    (aim self direction))))))
 
 ;;; The reactor
 
@@ -583,15 +567,15 @@
     (dotimes (n 5)
       (add-block self (new glitch) 
     		 (+ 100 (random 800))
-    		 (+ 100 (random 800))))
-    (dotimes (n 20)
-      (add-block self (new monitor) 
-		 (+ 100 (random 800))
-		 (+ 100 (random 800))))
-    (dotimes (n 3)
-      (add-block self (new biclops) 
-		 (+ 400 (random 500))
-		 (+ 400 (random 500))))))
+    		 (+ 100 (random 800))))))
+    ;; (dotimes (n 20)
+    ;;   (add-block self (new monitor) 
+    ;; 		 (+ 100 (random 800))
+    ;; 		 (+ 100 (random 800))))
+    ;; (dotimes (n 3)
+    ;;   (add-block self (new biclops) 
+    ;; 		 (+ 400 (random 500))
+    ;; 		 (+ 400 (random 500))))))
 
 (define-method reset reactor ()
   (xalcyon))
@@ -607,9 +591,6 @@
 		   x y :color "white"
 		   :font *xalcyon-font*))))
 
-;; Last, we define the startup function (whose name should be the same
-;; as the package.)
-
 (defun xalcyon ()
   (let ((robot (new robot))
 	(reactor (new reactor)))
@@ -619,7 +600,7 @@
 	 :player robot
 	 :world reactor)
     (reset-score) 
-    (build reactor)
-    (play-music (random-choose *soundtrack*) :loop t)))
+    (build reactor)))
+;    (play-music (random-choose *soundtrack*) :loop t)))
 
 ;;; xalcyon.lisp ends here
