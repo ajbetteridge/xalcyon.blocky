@@ -34,29 +34,22 @@
 
 (defvar *xalcyon-font* "sans-mono-bold-16") ;; one of the included fonts
 
-(defvar *score* 0)
+(defun is-enemy (thing) 
+  (has-tag thing :enemy))
 
-;; Let's define a simple object to display a flashing numeric score.
+;;; Some sounds
 
-(define-block score-display points) 
+(defparameter *slam-sounds*
+  (defresource 
+      (:name "slam1" :type :sample :file "slam1.wav" :properties (:volume 52))
+      (:name "slam2" :type :sample :file "slam2.wav" :properties (:volume 52))
+    (:name "slam3" :type :sample :file "slam3.wav" :properties (:volume 52))))
 
-(define-method initialize score-display (&optional (points 100))
-  (setf %points points)
-  (later 1.3 (destroy self)))
-
-(define-method draw score-display ()
-  (draw-string (prin1-to-string %points)
-	       %x %y :color (random-choose '("magenta" "cyan" "yellow" "red" "white"))
-		     :font *xalcyon-font*))
-
-(defun score (&optional (points 50) x y)
-  (incf *score* points)
-  (when (and (numberp x)
-	     (numberp y))
-    (add-block *world* (new score-display points) x y)))
-
-(defun reset-score ()
-  (setf *score* 0))
+(defparameter *bonux-sounds*
+  (defresource 
+      (:name "bonux1" :type :sample :file "bonux1.wav" :properties (:volume 12))
+      (:name "bonux2" :type :sample :file "bonux2.wav" :properties (:volume 12))
+    (:name "bonux3" :type :sample :file "bonux3.wav" :properties (:volume 12))))
  
 ;;; Musical accompaniment
  
@@ -65,7 +58,7 @@
     (:name "beatup" :type :music :file "beatup.ogg")
     (:name "defmacron" :type :music :file "defmacron.ogg")
     (:name "ompula" :type :music :file "ompula.ogg")
-    (:name "wraparound" :type :music :file "wraparound.ogg")
+    (:name "wraparound" :type :music :file "wraparound.ogg" :properties (:volume 200))
     (:name "xalcyon" :type :music :file "xalcyon.ogg")))
 
 ;;; Colored, themeable bricks that make up the environment
@@ -75,7 +68,7 @@
     (:tandy :background "black" :brick "red" :brick2 "gray40" :wall "gray20")
     (:sun :background "saddle brown" :brick "cyan" :brick2 "cyan" :wall "black")))
 
-(defparameter *level* :tandy)
+(defparameter *level* :dec)
 
 (defun level-color (&optional (part :brick))
   (let ((level (assoc *level* *levels*)))
@@ -103,20 +96,6 @@
 (define-method draw brick ()
   (draw-box %x %y %width %height :color (level-color %part)))
 
-;;; Breakable blocks
-
-(defbrick glass
-  :part :brick2
-  :color (level-color :brick2))
-
-(define-method damage glass (points)
-  (play-sound self (random-choose '("shatter" "shatter2")))
-  (destroy self))
-
-(defresource 
-    (:name "shatter" :type :sample :file "shatter.wav" :properties (:volume 40))
-    (:name "shatter2" :type :sample :file "shatter2.wav" :properties (:volume 40)))
-
 ;;; Sparkle clouds
 
 (define-block spark 
@@ -140,78 +119,132 @@
 		(new spark) 
 		(+ x (random 30)) (+ y (random 30)))))
 
-;;; Biclops man enemy
-
-(defresource
-    (:name "biclops" :type :image :file "biclops.png"))
-
-(define-block biclops
-  (image :initform "biclops")
-  (tags :initform '(:biclops :enemy))
-  (stomped :initform nil)
-  (hit-points :initform 3))
-
-(defparameter *biclops-sounds*
-  (defresource 
-      (:name "gond1" :type :sample :file "gond1.wav" :properties (:volume 40))
-      (:name "gond2" :type :sample :file "gond2.wav" :properties (:volume 70))))
-
-(define-method stomp biclops ()
-  (play-sound self "gond1")
-  (move-toward self (direction-to-player self) 12)
-  (setf %stomped t)
-  (later 12 (unstomp self)))
-
-(define-method collide biclops (thing)
-  (when (is-robot thing)
-    (damage thing 1))
-  (when (is-brick thing)
-    (restore-location self)))
-
-(define-method damage biclops (points)
-  (play-sound self "gond2")
-  (make-sparks %x %y 10)
-  (score 5200 %x %y)
-  (destroy self))
-
-(define-method unstomp biclops ()
-  (setf %stomped nil))
-
-(define-method update biclops ()
-  (when (< (distance-to-player self) 220)
-    (when (not %stomped)
-      (stomp self))))
-
-;;; An enemy bullet 
+;;; A bullet
 
 (defun is-bullet (thing)
-    (has-tag thing :bullet))
+  (has-tag thing :bullet))
+
+(defun is-player-bullet (thing)
+  (and (is-bullet thing)
+       (has-tag thing :player)))
+
+(defun is-enemy-bullet (thing)
+  (and (is-bullet thing)
+       (has-tag thing :enemy)))
 
 (define-block bullet 
   :height 5 :width 5
   :tags '(:bullet))
 
 (define-method update bullet ()
-  (move-forward self 2))
+  (move-forward self 4))
 
 (define-method collide bullet (thing)
-  (when (not (has-tag thing :enemy))
-    (if (is-trail thing)
-	(progn 
-	  (play-sound self "bonux3")
-	  (destroy self))
-	(unless (is-bullet thing)
-	  (when (has-method :damage thing)
-	    (damage thing 1)
-	    (destroy self))))))
+  (cond 
+    ;; hit enemies with player bullets
+    ((and (is-player-bullet self)
+	  (is-enemy thing))
+     (damage thing 1))
+    ;; allow player bullets to pass through trail
+    ;; (and through the player)
+    ((and (is-player-bullet self)
+	  (or (is-trail thing)
+	      (is-robot thing)))
+     nil)
+    ((is-trail thing)
+     (play-sound self "bonux3")
+     (destroy self))
+    ((and (is-enemy thing)
+	  (not (is-player-bullet thing)))
+     nil)
+    (t (when (has-method :damage thing)
+	 (damage thing 1)
+	 (destroy self)))))
 
-(define-method initialize bullet (heading)
+(define-method initialize bullet (heading &rest tags)
   (super%initialize self)
-  (setf %heading heading))
+  (setf %heading heading)
+  (when tags
+    (dolist (tag tags)
+      (add-tag self tag))))
 
 (define-method draw bullet ()
-  (draw-circle %x %y 2.5 :color (random-choose '("yellow" "red"))
+  (draw-circle %x %y 2.5 
+	       :color (random-choose 
+		       (if (is-player-bullet self)
+			   '("white" "cyan")
+			   '("yellow" "red")))
 	       :type :solid))
+
+;;; Corruption glitches that spread
+
+(defparameter *corruption-images*
+  (defresource 
+      (:name "corruption1" :type :image :file "corruption1.png")
+      (:name "corruption2" :type :image :file "corruption2.png")
+    (:name "corruption3" :type :image :file "corruption3.png")
+    (:name "corruption4" :type :image :file "corruption4.png")
+    (:name "corruption5" :type :image :file "corruption5.png")
+    (:name "corruption6" :type :image :file "corruption6.png")))
+
+(defparameter *corruption-sounds*
+  (defresource 
+      (:name "pip1" :type :sample :file "pip1.wav" :properties (:volume 40))
+      (:name "pip2" :type :sample :file "pip2.wav" :properties (:volume 40))
+    (:name "pip3" :type :sample :file "pip1.wav" :properties (:volume 40))))
+
+(defparameter *glitch-sounds*
+  (defresource 
+      (:name "blurp" :type :sample :file "blurp.wav" :properties (:volume 40))
+      (:name "blurp2" :type :sample :file "blurp2.wav" :properties (:volume 40))
+      (:name "blop" :type :sample :file "blop.wav" :properties (:volume 40))))
+
+(define-block glitch
+  (tags :initform '(:enemy))
+  (image :initform (random-choose *corruption-images*))
+  (speed :initform (+ 0.1 (random 0.2)))
+  (overlay-color :initform nil))
+
+(define-method damage glitch (points)
+  (make-sparks (- %x 20) (- %y 20) 2)
+  (play-sound self (random-choose *corruption-sounds*))
+  (destroy self))
+
+(define-method collide glitch (thing)
+  (when (is-robot thing)
+    (damage thing 4)
+    (destroy self)))
+
+(define-method set-overlay glitch ()
+  (setf %overlay-color (random-choose '("cyan" "magenta" "yellow" "orange"))))
+
+(define-method clear-overlay glitch ()
+  (setf %overlay-color nil))
+
+;; (define-method initialize glitch ()
+;;   (super%initialize self)
+;;   (later 4.0 (spread self)))
+
+(define-method creep glitch ()
+  (when (< (distance-to-player self) 350)
+    (point-at-thing self (player))
+    (percent-of-time 8 (play-sound self (random-choose *glitch-sounds*)))
+    (move-forward self 1)))
+
+(define-method update glitch ()
+  (percent-of-time 3 (change-image self (random-choose *corruption-images*)))
+  (creep self)
+  (percent-of-time 3 
+    (set-overlay self)
+    (later 20 (clear-overlay self))))
+
+(define-method draw glitch ()
+  (super%draw self)
+  (set-blending-mode :additive2)
+  (when %overlay-color
+    (draw-box %x %y %width %height
+     :alpha 0.2
+     :color %overlay-color)))
 
 ;;; Monitor enemy
 
@@ -237,7 +270,8 @@
 
 (define-method flee monitor ()
   (setf %heading (+ pi (heading-to-player self)))
-  (move-forward self 2))
+  (percent-of-time 5 (drop self (new glitch)))
+  (move-forward self 3.2))
 
 (define-method stop-fleeing monitor ()
   (setf %fleeing nil))
@@ -258,7 +292,8 @@
 					  :type :sample :file "magenta-alert.wav" 
 					  :properties (:volume 60)))))
 	;; patrol
-	(move-toward self %direction 2))))
+	(progn (percent-of-time 2 (choose-new-direction self))
+	       (move-toward self %direction 2)))))
 
 (define-method update monitor ()
   (if %fleeing 
@@ -266,46 +301,12 @@
       (hunt self)))
 
 (define-method collide monitor (thing)
-  (when (is-robot thing)
-    (damage thing 1))
-  (restore-location self)
-;  (when %fleeing (setf %fleeing nil))
-  (choose-new-direction self))
-
-(define-method damage monitor (points)
-  (make-sparks (- %x 16) (- %y 16))
-  (play-sound self (defresource :name "xplod"
-			    :type :sample :file "xplod.wav" 
-			    :properties (:volume 60)))
-  (play-sound self (random-choose *slam-sounds*))
-  (score 700 %x %y)
-  (destroy self))
-
-(define-method fire monitor (direction)
-  (multiple-value-bind (x y) (center-point self)
-    (drop-block *world* (new bullet (heading-to-player self)) x y)))
-
-;;; A bouncing ball to break bricks with
-
-(defun is-ball (thing)
-  (has-tag thing :ball))
-
-(defparameter *bounce-sounds*
-  (defresource 
-      (:name "boop1" :type :sample :file "boop1.wav" :properties (:volume 20))
-      (:name "boop2" :type :sample :file "boop2.wav" :properties (:volume 20))
-      (:name "boop3" :type :sample :file "boop3.wav" :properties (:volume 20))))
-
-(define-block ball 
-  :height 5 :width 5
-  ;; having them expire after 100 bounces seems to make a good balance
-  ;; between usability and preventing runaway or "stuck" pong balls.
-  :bounces 100
-  :tags '(:ball)
-  :direction :right)
-
-(define-method update ball ()
-  (move-toward self %direction 4))
+  (when (not (is-enemy thing))
+    (when (is-robot thing)
+      (damage thing 1))
+    (restore-location self)
+    ;; (when %fleeing (setf %fleeing nil))
+    (choose-new-direction self)))
 
 (defparameter *slam-sounds*
   (defresource 
@@ -313,28 +314,23 @@
       (:name "slam2" :type :sample :file "slam2.wav" :properties (:volume 52))
     (:name "slam3" :type :sample :file "slam3.wav" :properties (:volume 52))))
 
-(defparameter *bonux-sounds*
+(define-method damage monitor (points)
+  (make-sparks (- %x 16) (- %y 16))
+  (play-sound self (defresource :name "xplod"
+			    :type :sample :file "xplod.wav" 
+			    :properties (:volume 60)))
+  (play-sound self (random-choose *slam-sounds*))
+  (destroy self))
+
+(define-method fire monitor (direction)
+  (multiple-value-bind (x y) (center-point self)
+    (drop-block *world* (new bullet (heading-to-player self)) x y)))
+
+(defparameter *bounce-sounds*
   (defresource 
-      (:name "bonux1" :type :sample :file "bonux1.wav" :properties (:volume 12))
-      (:name "bonux2" :type :sample :file "bonux2.wav" :properties (:volume 12))
-    (:name "bonux3" :type :sample :file "bonux3.wav" :properties (:volume 12))))
-
-(define-method collide ball (thing)
-  ;; take a thing-specific action
-  (unless (or (is-trail thing) 
-	      (is-robot thing))
-    (when (has-method :damage thing)
-      (damage thing 1)
-      (destroy self))))
-
-(define-method initialize ball (direction)
-  (assert (keywordp direction))
-  (initialize%%block self)
-  (setf %direction direction))
-
-(define-method draw ball ()
-  (draw-circle %x %y 2.6 :color (random-choose '("white" "cyan"))
-	       :type :solid))
+      (:name "boop1" :type :sample :file "boop1.wav" :properties (:volume 20))
+      (:name "boop2" :type :sample :file "boop2.wav" :properties (:volume 20))
+      (:name "boop3" :type :sample :file "boop3.wav" :properties (:volume 20))))
 
 ;;; Positronic trail
 
@@ -353,74 +349,8 @@
   (later 2.5 (destroy self)))
 
 (define-method collide trail (thing)
-  (when (is-bullet thing)
+  (when (is-enemy-bullet thing)
     (destroy thing)))
-
-;;; Corruption that spreads
-
-(defparameter *corruption-images*
-  (defresource 
-      (:name "corruption1" :type :image :file "corruption1.png")
-      (:name "corruption2" :type :image :file "corruption2.png")
-    (:name "corruption3" :type :image :file "corruption3.png")
-    (:name "corruption4" :type :image :file "corruption4.png")
-    (:name "corruption5" :type :image :file "corruption5.png")
-    (:name "corruption6" :type :image :file "corruption6.png")))
-
-(defparameter *corruption-sounds*
-  (defresource 
-      (:name "pip1" :type :sample :file "pip1.wav" :properties (:volume 40))
-      (:name "pip2" :type :sample :file "pip2.wav" :properties (:volume 40))
-    (:name "pip3" :type :sample :file "pip1.wav" :properties (:volume 40))))
-
-(define-block glitch
-  (image :initform (random-choose *corruption-images*))
-  (speed :initform (+ 0.1 (random 0.2)))
-  (overlay-color :initform nil))
-
-(define-method damage glitch (points)
-  (make-sparks (- %x 20) (- %y 20) 2)
-  (play-sound self (random-choose *corruption-sounds*))
-  (score 110 %x %y)
-  (destroy self))
-
-(define-method collide glitch (thing)
-  (when (is-robot thing)
-    (damage thing 4)
-    (destroy self)))
-
-(define-method set-overlay glitch ()
-  (setf %overlay-color (random-choose '("cyan" "magenta" "yellow" "orange"))))
-
-(define-method clear-overlay glitch ()
-  (setf %overlay-color nil))
-
-(define-method initialize glitch ()
-  (super%initialize self)
-  (later 4.0 (spread self)))
-
-(define-method spread glitch ()
-  (when (< (distance-to-player self) 350)
-    (multiple-value-bind (x y)
-	(step-in-direction %x %y (random-direction) 16)
-      (add-block *world* (new glitch) x y)))
-  (if (zerop (random 2))
-      (later 3.0 (spread self))
-      (later 5.0 (spread self))))
-
-(define-method update glitch ()
-  (percent-of-time 3 (change-image self (random-choose *corruption-images*)))
-  (percent-of-time 3 
-    (set-overlay self)
-    (later 20 (clear-overlay self))))
-
-(define-method draw glitch ()
-  (super%draw self)
-  (set-blending-mode :additive2)
-  (when %overlay-color
-    (draw-box %x %y %width %height
-     :alpha 0.2
-     :color %overlay-color)))
 
 ;;; The player
 
@@ -452,20 +382,12 @@
   (tags :initform '(:robot))
   (speed :initform 2))
 
-(define-method draw robot ()
-  (super%draw self)
-  (when (not %dead)
-    (multiple-value-bind (x0 y0) (center-point self)
-      (multiple-value-bind (x y) (step-in-direction x0 y0 %direction 4)
-	(draw-circle x y 3 :color "red" :type :solid)))))
-
-(define-method move robot (direction)
-  (unless (holding-shift)
-    (decf %energy)
-    (when (zerop %energy)
-      (drop self (new trail) 6 6)
-      (setf %energy 4))
-    (move-toward self direction %speed)))
+;; (define-method draw robot ()
+;;   (super%draw self)
+;;   (when (not %dead)
+;;     (multiple-value-bind (x0 y0) (center-point self)
+;;       (multiple-value-bind (x y) (step-in-direction x0 y0 %direction 4)
+;; 	(draw-circle x y 3 :color "red" :type :solid)))))
 
 (defresource 
     (:name "zap" :type :sample :file "zap.wav" :properties (:volume 30))
@@ -478,14 +400,13 @@
 (define-method reload robot ()
   (setf %ready t))
 
-(define-method fire robot (&optional direction)
+(define-method fire robot (heading)
   (when (and %ready (not %dead))
     (setf %ready nil)
     (later 12 (reload self))
     (play-sound self "zap")
-    (multiple-value-bind (x0 y0) (center-point self)
-      (multiple-value-bind (x y) (step-in-direction x0 y0 (or direction %direction) 12)
-	(add-block *world* (new ball (or direction %direction)) x y)))))
+    (drop self (new bullet heading :player)
+	  (/ %width 2) (/ %height 2))))
 
 (define-method damage robot (points)
   (when (not %dead)
@@ -497,21 +418,23 @@
   (when (is-brick thing)
     (restore-location self)))
 
-;;; Robot controls
-
 (define-method aim robot (angle)
   (setf %heading angle))
+
+(define-method drop-trail-maybe robot ()
+  (decf %energy)
+  (when (zerop %energy)
+    (drop self (new trail) 6 6)
+    (setf %energy 2)))
 
 (define-method update robot ()
   (when (not %dead)
     (when (left-analog-stick-pressed-p)
-      (let ((heading (left-analog-stick-heading)))
-	(aim self heading)
-	(move-forward self 3)))))
-      ;; (if (holding-space)
-      ;; 	  (fire self %direction)
-      ;; 	  (when direction 
-      ;; 	    (aim self direction))))))
+      (aim self (left-analog-stick-heading))
+      (move-forward self 3)
+      (drop-trail-maybe self))
+    (when (right-analog-stick-pressed-p)
+      (fire self (right-analog-stick-heading)))))
 
 ;;; The reactor
 
@@ -546,17 +469,18 @@
     (turn-right self 90)))
     
 (define-method run reactor-turtle ()
-  (draw-square self 31)
-  (skip-wall self 10)
-  (turn-right self 90)
-  (skip-wall self 10)
-  (turn-left self 90)
-  (draw-room self 10)
-  (turn-left self 90)
-  (skip-wall self 3)
-  (draw-room self 6))
+  (draw-square self 31))
+  ;; (skip-wall self 10)
+  ;; (turn-right self 90)
+  ;; (skip-wall self 10)
+  ;; (turn-left self 90)
+  ;; (draw-room self 10)
+  ;; (turn-left self 90)
+  ;; (skip-wall self 3)
+  ;; (draw-room self 6))
 
 (define-method build reactor ()
+  (setf %window-scrolling-speed 4)
   (let ((*quadtree* %quadtree))
     (with-fields (grid-width grid-height) self
       (move-window-to self 0 0)
@@ -564,32 +488,18 @@
       	(drop self turtle)
       	(run turtle)
       	(discard-block self turtle)))
-    (dotimes (n 5)
-      (add-block self (new glitch) 
-    		 (+ 100 (random 800))
-    		 (+ 100 (random 800))))))
-    ;; (dotimes (n 20)
-    ;;   (add-block self (new monitor) 
+    ;; (dotimes (n 5)
+    ;;   (add-block self (new glitch) 
     ;; 		 (+ 100 (random 800))
     ;; 		 (+ 100 (random 800))))
+    (dotimes (n 50)
+      (add-block self (new monitor) 
+    		 (+ 100 (random 800))
+    		 (+ 100 (random 800))))))
     ;; (dotimes (n 3)
     ;;   (add-block self (new biclops) 
     ;; 		 (+ 400 (random 500))
     ;; 		 (+ 400 (random 500))))))
-
-(define-method reset reactor ()
-  (xalcyon))
-
-(define-method draw reactor ()
-  (draw%%world self)
-  (multiple-value-bind (top left right bottom)
-      (window-bounding-box self)
-    (let ((x (+ left (dash 5)))
-	  (y (- bottom (font-height *xalcyon-font*) (dash 2)))
-	  (label (format nil "~d" *score*)))
-      (draw-string label 
-		   x y :color "white"
-		   :font *xalcyon-font*))))
 
 (defun xalcyon ()
   (let ((robot (new robot))
@@ -599,8 +509,10 @@
     (new universe 
 	 :player robot
 	 :world reactor)
-    (reset-score) 
-    (build reactor)))
-;    (play-music (random-choose *soundtrack*) :loop t)))
+    (build reactor)
+    (play-music "wraparound" :loop t)))
+
+(define-method reset reactor ()
+  (xalcyon))
 
 ;;; xalcyon.lisp ends here
