@@ -25,8 +25,8 @@
 
 (in-package :xalcyon)
 
-(setf *screen-width* 1280)
-(setf *screen-height* 720)
+(setf *screen-width* 800)
+(setf *screen-height* 600)
 (setf *window-title* "Xalcyon")
 (setf *use-antialiased-text* nil)
 (setf *scale-output-to-window* nil)
@@ -53,9 +53,9 @@
 
 (defparameter *whack-sounds*
   (defresource 
-      (:name "whack1" :type :sample :file "whack1.wav" :properties (:volume 52))
-      (:name "whack2" :type :sample :file "whack2.wav" :properties (:volume 52))
-    (:name "whack3" :type :sample :file "whack3.wav" :properties (:volume 52))))
+      (:name "whack1" :type :sample :file "whack1.wav" :properties (:volume 82))
+      (:name "whack2" :type :sample :file "whack2.wav" :properties (:volume 82))
+    (:name "whack3" :type :sample :file "whack3.wav" :properties (:volume 82))))
 
 (defparameter *bonux-sounds*
   (defresource 
@@ -78,9 +78,10 @@
 (defparameter *themes* 
   '((:dec :background "DarkSlateBlue" :brick "SlateBlue" :brick2 "hot pink" :wall "Black")
     (:tandy :background "black" :brick "red" :brick2 "gray40" :wall "gray20")
+    (:vax :background "gray20" :brick "gray8" :brick2 "gray40" :wall "gray20")
     (:sun :background "saddle brown" :brick "cyan" :brick2 "cyan" :wall "black")))
 
-(defparameter *theme* :tandy)
+(defparameter *theme* :vax)
 
 (defun theme-color (&optional (part :brick))
   (let ((theme (assoc *theme* *themes*)))
@@ -159,11 +160,11 @@
 
 (defun is-enemy-bullet (thing)
   (and (is-bullet thing)
-       (has-tag thing :enemy)))
+       (not (is-player-bullet thing))))
 
 (define-block bullet 
   :radius 3
-  :speed 4
+  :speed 4.2
   :clock 100
   :blend :alpha
   :growth-rate nil
@@ -176,14 +177,6 @@
 			   '("white" "cyan")
 			   '("yellow" "red")))
 	       :type :solid))
-  ;; (with-field-values (x y blend opacity height width) self
-  ;;   (draw-image (random-choose *plasmon-images*) 
-  ;; 		x y :blend blend :opacity opacity
-  ;; 		    :height height :width width)))
-    ;; (when (is-player-bullet self)
-    ;;   (draw-image "plasmon-player" x y :blend :additive2 :opacity 0.1
-    ;; 				       :height height :width width))))
-  
 	      
 (define-method update bullet ()
   ;; (decf %clock)
@@ -201,16 +194,24 @@
     ;; (and through the player)
     ((and (is-player-bullet self)
 	  (or (is-trail thing)
+	      (is-player-bullet thing)
 	      (is-robot thing)))
      nil)
-    ;; enemy bullets cannot pass trail
-    ((is-trail thing)
-     (play-sound self "bonux3")
-     (destroy self))
+    ;; ;; enemy bullets cannot pass trail
+    ;; ((is-trail thing)
+    ;;  (play-sound self "bonux3")
+    ;;  (destroy self))
     ;; enemy bullets don't hurt enemies
     ;; or other enemy bullets
-    ((and (is-enemy thing)
-	  (not (is-player-bullet thing)))
+    ((or (is-enemy thing)
+	 (is-enemy-bullet thing))
+     nil)
+    ;; player bullets do not hurt enemy bullets
+    ((or 
+      (and (is-player-bullet self)
+	   (is-enemy-bullet thing))
+      (and (is-enemy-bullet self)
+	   (is-player-bullet thing)))
      nil)
     ;; by default, just damage whatever it is
     (t (when (has-method :damage thing)
@@ -250,7 +251,6 @@
 
 (defresource (:name "munch1" :type :sample :file "munch1.wav" :properties (:volume 60)))
 (defresource (:name "bigboom" :type :sample :file "bigboom.wav" :properties (:volume 60)))
-
 
 (define-block glitch
   (tags :initform '(:enemy))
@@ -303,10 +303,11 @@
 
 (defresource
     (:name "monitor" :type :image :file "monitor.png")
-    (:name "monitor2" :type :image :file "monitor2.png"))
+    (:name "monitor2" :type :image :file "monitor2.png")
+    (:name "monitor3" :type :image :file "monitor3.png"))
 
 (define-block monitor 
-  (hit-points :initform 1) fleeing
+  (hp :initform 2) fleeing
   (direction :initform (random-choose '(:up :down)))
   (tags :initform '(:monitor :enemy))
   (image :initform "monitor2"))
@@ -349,6 +350,11 @@
 	       (move-toward self %direction 2)))))
 
 (define-method update monitor ()
+  (setf %image 
+	(ecase %hp
+	  (2 "monitor2")
+	  (1 (random-choose '("monitor" "monitor3")))
+	  (0 "monitor")))
   (if %fleeing 
       (flee self)
       (hunt self)))
@@ -362,35 +368,62 @@
     (choose-new-direction self)))
 
 (define-method damage monitor (points)
-  (make-sparks (- %x 16) (- %y 16))
-  (play-sound self (defresource :name "xplod"
-			    :type :sample :file "xplod.wav" 
-			    :properties (:volume 60)))
-  (play-sound self (random-choose *slam-sounds*))
-  (destroy self))
+  (decf %hp)
+  (play-sound self (random-choose *whack-sounds*))
+  (when (zerop %hp)
+    (make-sparks (- %x 16) (- %y 16))
+    (play-sound self (defresource :name "xplod"
+				  :type :sample :file "xplod.wav" 
+				  :properties (:volume 90)))
+    (destroy self)))
 
 (define-method fire monitor (direction)
   (multiple-value-bind (x y) (center-point self)
-    (dotimes (n 4)
-      (drop self (new bullet (+ (heading-to-player self) -1.5 (random 3.0)))))))
+    (drop self (new bullet (heading-to-player self)))
+    (dotimes (n 2)
+      (drop self (new bullet (+ (heading-to-player self) -1.5 (random 3.2)))))))
 
 ;;; Carriers
 
 (defresource (:name "carrier" :type :image :file "carrier.png"))
 
+(defparameter *wreckage-images*
+  (defresource
+      (:name "wreckage1" :type :image :file "wreckage1.png")
+      (:name "wreckage2" :type :image :file "wreckage2.png")
+    (:name "wreckage3" :type :image :file "wreckage3.png")
+    (:name "wreckage4" :type :image :file "wreckage4.png")))
+
+(define-block wreckage
+  :tags '(:enemy)
+  :heading (random (* 2 pi))
+  :speed (+ 1 (random 2.5))
+  :image (random-choose *wreckage-images*))
+
+(define-method update wreckage ()
+  (move-forward self %speed))
+
+(define-method collide wreckage (thing)
+  (when (is-robot thing)
+    (damage thing 1))
+  (when (is-brick thing)
+    (destroy self)))
+
 (define-block carrier
   (tags :initform '(:enemy))
   (direction :initform (random-choose '(:up :down :left :right)))
-  (hp :initform 10)
+  (hp :initform 15)
   (image :initform "carrier"))
 
 (define-method update carrier ()
-  (when (> 400 (distance-to-player self))
-    (percent-of-time 1 
+  (when (> 550 (distance-to-player self))
+    (percent-of-time 2.5 
       (drop self (new glitch))))
-  (move-toward self %direction 0.5))
+  (move-toward self %direction 1))
 
 (define-method collide carrier (thing)
+  (when (is-robot thing)
+    (damage thing 1))
   (unless (is-enemy thing)
     (restore-location self)
     (setf %direction (random-choose '(:up :down)))))
@@ -401,8 +434,13 @@
       (play-sound self (random-choose *whack-sounds*))
       (progn 
 	(play-sound self "bigboom")
+	(play-sound self "xplod")
 	(multiple-value-bind (x y) (center-point self)
 	  (make-sparks x y 20)
+	  (dotimes (n 5)
+	    (drop self (new wreckage) (random 50) (random 100)))
+	  (dotimes (n 8)
+	    (drop self (new bullet (random (* 2 pi)) :radius 8) (random 50) (random 100)))
 	  (destroy self)))))
 
 ;;; Positronic trail
@@ -470,7 +508,7 @@
 (define-method fire robot (heading)
   (when (and %ready (not %dead))
     (setf %ready nil)
-    (later 12 (reload self))
+    (later 8 (reload self))
     (play-sound self "zap")
     (drop self (new bullet heading :speed 6 :tags '(:player))
 	  (/ %width 2) (/ %height 2))))
@@ -482,6 +520,8 @@
     (change-image self (defresource :name "skull" :type :image :file "skull.png"))))
 
 (define-method collide robot (thing)
+  (when (is-enemy thing)
+    (damage self 1))
   (when (is-brick thing)
     (restore-location self)))
 
@@ -555,11 +595,11 @@
       	(drop self turtle)
       	(run turtle)
       	(discard-block self turtle)))
-    (dotimes (n 3)
+    (dotimes (n 2)
       (add-block self (new carrier) 
     		 (+ 100 (random 800))
     		 (+ 100 (random 800))))
-    (dotimes (n 20)
+    (dotimes (n 25)
       (add-block self (new monitor) 
     		 (+ 100 (random 800))
     		 (+ 100 (random 800))))))
@@ -571,13 +611,13 @@
 (defun xalcyon ()
   (let ((robot (new robot))
 	(reactor (new reactor)))
-    (set-location robot 110 110)
+    (set-location robot 60 60)
     (bind-event reactor '(:escape) :reset)
     (new universe 
 	 :player robot
 	 :world reactor)
-    (build reactor)))
-;    (play-music "wraparound" :loop t)))
+    (build reactor)
+    (play-music "defmacron" :loop t)))
 
 (define-method reset reactor ()
   (xalcyon))
