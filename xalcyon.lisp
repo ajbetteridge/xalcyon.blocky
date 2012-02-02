@@ -78,6 +78,7 @@
     (:name "beatup" :type :music :file "beatup.ogg")
     (:name "vixon" :type :music :file "vixon.ogg")
     (:name "xmrio" :type :music :file "xmrio.ogg")
+    (:name "phong" :type :music :file "phong.ogg")
     (:name "defmacron" :type :music :file "defmacron.ogg")
     (:name "ompula" :type :music :file "ompula.ogg")
     (:name "wraparound" :type :music :file "wraparound.ogg" :properties (:volume 200))
@@ -159,7 +160,7 @@
      (setf %heading (or (percent-of-time 85 (- pi %heading))
 			(- 1 %heading))))))
 
-(defun drop-chips (thing &key (value-multiplier 1) (count 5))
+(defun drop-chips (thing &key (value-multiplier 1) (count (random 3)))
   (dotimes (n count)
     (let ((chip (new chip)))
       (setf (field-value :value chip)
@@ -419,7 +420,8 @@
       (hunt self)))
 
 (define-method collide monitor (thing)
-  (when (not (is-enemy thing))
+  (when (not (or (is-enemy thing)
+		 (is-chip thing)))
     (when (is-robot thing)
       (damage thing 1))
     (restore-location self)
@@ -596,15 +598,15 @@
     (play-sound self (defresource :name "deathx" :type :sample :file "deathx.wav" :properties (:volume 100)))
     (setf %dead t)
     (let ((sign (new lose)))
-      (drop self sign)
-      (center sign))
+      (drop self sign 32 32))
+;      (center sign))
     (change-image self (defresource :name "skull" :type :image :file "skull.png"))))
 
 (define-method win robot ()
   (play-music "vixon")
   (let ((sign (new win)))
-    (drop self sign)
-    (center sign)))
+    (drop self sign 32 32)))
+;l    (center sign)))
 
 (define-method collide robot (thing)
   (when (is-enemy thing)
@@ -634,7 +636,7 @@
 
 (defresource (:name "base" :type :image :file "generator.png"))
 
-(define-block base :image "base" :ready nil :clock 70 :tags '(:enemy) :hp 20)
+(define-block base :image "base" :ready nil :clock 70 :tags '(:enemy) :hp 15)
 
 (define-method update base ()
   (when (< (distance-to-player self) 300)
@@ -750,7 +752,7 @@
     (new universe 
 	 :player robot
 	 :world reactor)
-    (play-music "xmrio" :loop t)
+    (play-music (random-choose '("phong" "beatup" "wraparound" "defmacron")) :loop t)
     (build reactor 1)))
 ;    (play-music "beatup" :loop t)))
 
