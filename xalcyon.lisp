@@ -1,4 +1,4 @@
-;;; xalcyon.lisp --- micro-xalcyon, a mini implementation of a xalcyon-like
+;;; xalcyon.lisp --- a multidirectional sci-fi shooter
 
 ;; Copyright (C) 2010, 2011, 2012  David O'Toole
 
@@ -32,12 +32,20 @@
 (setf *scale-output-to-window* nil)
 (setf *frame-rate* 30)
 
-(defvar *xalcyon-font* "sans-mono-bold-16") ;; one of the included fonts
+(defvar *xalcyon-font* "sans-mono-bold-16") 
 
 (defun is-enemy (thing) 
   (has-tag thing :enemy))
 
+(defun is-target (thing)
+  (has-tag thing :target))
+
 ;;; Some sounds
+
+(defresource 
+    (:name "xplod"
+     :type :sample :file "xplod.wav" 
+     :properties (:volume 90)))
 
 (defparameter *bounce-sounds*
   (defresource 
@@ -68,6 +76,8 @@
 (defparameter *soundtrack* 
   (defresource 
     (:name "beatup" :type :music :file "beatup.ogg")
+    (:name "vixon" :type :music :file "vixon.ogg")
+    (:name "xmrio" :type :music :file "xmrio.ogg")
     (:name "defmacron" :type :music :file "defmacron.ogg")
     (:name "ompula" :type :music :file "ompula.ogg")
     (:name "wraparound" :type :music :file "wraparound.ogg" :properties (:volume 200))
@@ -78,8 +88,12 @@
 (defparameter *themes* 
   '((:dec :background "DarkSlateBlue" :brick "SlateBlue" :brick2 "hot pink" :wall "Black")
     (:tandy :background "black" :brick "red" :brick2 "gray40" :wall "gray20")
-    (:vax :background "gray20" :brick "gray8" :brick2 "gray40" :wall "gray20")
-    (:sun :background "saddle brown" :brick "cyan" :brick2 "cyan" :wall "black")))
+    (:vax :background "gray20" :brick "gray80" :brick2 "gray40" :wall "gray20")
+    (:command :background "MediumBlue" :brick "yellow" :brick2 "gray40" :wall "gray20")
+    (:maynard :background "gray10" :brick "goldenrod" :brick2 "gray40" :wall "gray20")
+    (:zerk :background "black" :brick "DeepSkyBlue" :brick2 "cyan" :wall "black")))
+
+(defun random-theme () (random-choose (mapcar #'car *themes*)))
 
 (defparameter *theme* :vax)
 
@@ -108,6 +122,49 @@
 
 (define-method draw brick ()
   (draw-box %x %y %width %height :color (theme-color %part)))
+
+;;; Collectible "chips" which are the XP/currency/score all rolled into one
+
+(defresource 
+    (:name "chip" :type :image :file "chip.png")
+    (:name "chip1" :type :sample :file "chip.wav" :properties (:volume 100)))
+
+(define-block chip 
+  :image "chip" 
+  :speed (+ 1.5 (random 0.5))
+  :heading (random (* 2 pi))
+  :tags '(:chip)
+  :value (+ 1 (random 5)))
+
+(defun is-chip (thing)
+  (has-tag thing :chip))
+
+(define-method update chip () 
+  (when (< (distance-to-player self) 100)
+    (point-at-thing self (player)))
+  (move-forward self %speed))
+
+(define-method collide chip (thing)
+  (cond
+    ((or (is-robot thing)
+	 (is-trail thing))
+     (incf (field-value :chips (player)) %value)
+     (play-sound self "chip1")
+     (destroy self))
+    ((or (is-chip thing)
+	 (is-bullet thing))
+     nil)
+    (t 
+     (restore-location self)
+     (setf %heading (or (percent-of-time 85 (- pi %heading))
+			(- 1 %heading))))))
+
+(defun drop-chips (thing &key (value-multiplier 1) (count 5))
+  (dotimes (n count)
+    (let ((chip (new chip)))
+      (setf (field-value :value chip)
+	    (truncate (* value-multiplier (field-value :value chip))))
+      (drop thing chip (random 10) (random 10)))))
 
 ;;; Sparkle clouds
 
@@ -165,7 +222,7 @@
 (define-block bullet 
   :radius 3
   :speed 4.2
-  :clock 100
+  :clock 60
   :blend :alpha
   :growth-rate nil
   :tags '(:bullet))
@@ -174,14 +231,15 @@
   (draw-circle %x %y %radius 
 	       :color (random-choose 
 		       (if (is-player-bullet self)
-			   '("white" "cyan")
+			   '("green" "yellow")
 			   '("yellow" "red")))
 	       :type :solid))
 	      
 (define-method update bullet ()
-  ;; (decf %clock)
-  ;; (when (zerop %clock) (destroy self))
-  (move-forward self %speed))
+  (decf %clock)
+  (if (zerop %clock) 
+      (destroy self)
+      (move-forward self %speed)))
 
 (define-method collide bullet (thing)
   (cond 
@@ -218,10 +276,11 @@
 	 (damage thing 1)
 	 (destroy self)))))
 
-(define-method initialize bullet (heading &key tags speed radius)
+(define-method initialize bullet (heading &key tags speed radius clock)
   (super%initialize self)
   (setf %heading heading)
   (when speed (setf %speed speed))
+  (when clock (setf %clock clock))
   (when radius (setf %radius radius))
   (when tags
     (dolist (tag tags)
@@ -333,12 +392,12 @@
 (define-method hunt monitor ()
   (let ((dist (distance-to-player self)))
     ;; hunt for player
-    (if (< dist 220)
+    (if (< dist 250)
 	(progn 
 	  (setf %heading (heading-to-player self))
 	  (move-forward self 2)
 	  ;; if close enough, fire and run away 
-	  (when (< dist 160)
+	  (when (< dist 190)
 	    (fire self (heading-to-player self))
 	    (setf %fleeing t)
 	    (later 1.4 (stop-fleeing self))
@@ -372,16 +431,17 @@
   (play-sound self (random-choose *whack-sounds*))
   (when (zerop %hp)
     (make-sparks (- %x 16) (- %y 16))
-    (play-sound self (defresource :name "xplod"
-				  :type :sample :file "xplod.wav" 
-				  :properties (:volume 90)))
+    (play-sound self "xplod")
+    (drop-chips self)
     (destroy self)))
 
 (define-method fire monitor (direction)
   (multiple-value-bind (x y) (center-point self)
     (drop self (new bullet (heading-to-player self)))
     (dotimes (n 2)
-      (drop self (new bullet (+ (heading-to-player self) -1.5 (random 3.2)))))))
+      (drop self (new bullet 
+		      (+ (heading-to-player self) -1.5 (random 3.2))
+		      :clock 100)))))
 
 ;;; Carriers
 
@@ -417,8 +477,8 @@
 
 (define-method update carrier ()
   (when (> 550 (distance-to-player self))
-    (percent-of-time 2.5 
-      (drop self (new glitch))))
+    (percent-of-time 3.5 
+      (drop self (new glitch) 40 40)))
   (move-toward self %direction 1))
 
 (define-method collide carrier (thing)
@@ -443,7 +503,7 @@
 	    (drop self (new bullet (random (* 2 pi)) :radius 8) (random 50) (random 100)))
 	  (destroy self)))))
 
-;;; Positronic trail
+;;; Positronic trail to gather items / block bullets
 
 (defun is-trail (thing)
   (has-tag thing :trail))
@@ -457,7 +517,7 @@
   (draw-box %x %y %width %height :color (random-choose '("yellow" "yellow" "goldenrod"))))
 
 (define-method initialize trail ()
-  (later 2.5 (destroy self)))
+  (later 2.7 (destroy self)))
 
 (define-method collide trail (thing)
   (when (is-enemy thing)
@@ -466,8 +526,13 @@
 ;;; The player
 
 (defresource
-  (:name "robot" :type :image :file "robot.png"))
- 
+  (:name "robot" :type :image :file "robot.png")
+  (:name "win" :type :image :file "win.png")
+  (:name "lose" :type :image :file "lose.png"))
+
+(define-block win :image "win")
+(define-block lose :image "lose")
+
 (defun is-robot (thing)
   (and (blockyp thing)
        (has-tag thing :robot)))
@@ -481,6 +546,8 @@
   (height :initform 16)
   (width :initform 16)
   (energy :initform 4)
+  (chips :initform 0)
+  (item :initform nil)
   (tags :initform '(:robot))
   (speed :initform 2))
 
@@ -496,6 +563,14 @@
     (:name "paz" :type :sample :file "paz.wav" :properties (:volume 30))
     (:name "talk" :type :sample :file "talk.wav" :properties (:volume 20)))
 
+;; give the player a few extra 
+(define-method bounding-box robot ()
+  (let ((margin 2))
+    (values (+ %y margin) 
+	    (+ %x margin)
+	    (+ %x %width (- margin))
+	    (+ %y %height (- margin)))))
+
 (define-method reset robot ()
   (xalcyon))
 
@@ -505,19 +580,31 @@
 (define-method reload robot ()
   (setf %ready t))
 
+(defun player-bullet (heading)
+  (new bullet heading :speed 7 :tags '(:player)))
+
 (define-method fire robot (heading)
   (when (and %ready (not %dead))
     (setf %ready nil)
     (later 8 (reload self))
     (play-sound self "zap")
-    (drop self (new bullet heading :speed 6 :tags '(:player))
+    (drop self (player-bullet heading)
 	  (/ %width 2) (/ %height 2))))
 
 (define-method damage robot (points)
   (when (not %dead)
     (play-sound self (defresource :name "deathx" :type :sample :file "deathx.wav" :properties (:volume 100)))
     (setf %dead t)
+    (let ((sign (new lose)))
+      (drop self sign)
+      (center sign))
     (change-image self (defresource :name "skull" :type :image :file "skull.png"))))
+
+(define-method win robot ()
+  (play-music "vixon")
+  (let ((sign (new win)))
+    (drop self sign)
+    (center sign)))
 
 (define-method collide robot (thing)
   (when (is-enemy thing)
@@ -538,20 +625,46 @@
   (when (not %dead)
     (when (left-analog-stick-pressed-p)
       (aim self (left-analog-stick-heading))
-      (move-forward self 3)
+      (move-forward self 3.5)
       (drop-trail-maybe self))
     (when (right-analog-stick-pressed-p)
       (fire self (right-analog-stick-heading)))))
 
+;;; Stationary bases that generate enemies
+
+(defresource (:name "base" :type :image :file "generator.png"))
+
+(define-block base :image "base" :ready nil :clock 70 :tags '(:enemy) :hp 20)
+
+(define-method update base ()
+  (when (< (distance-to-player self) 300)
+    (decf %clock)
+    (when (zerop %clock)
+      (setf %clock 80)
+      (drop self (new monitor)))))
+
+(define-method damage base (points)
+  (decf %hp)
+  (play-sound self (random-choose *whack-sounds*))
+  (when (zerop %hp)
+    (make-sparks (- %x 16) (- %y 16))
+    (play-sound self "xplod")
+    (drop-chips self :value-multiplier 10 :count 8)
+    (destroy self)))
+
+
 ;;; The reactor
 
 (define-world reactor
+  level-clear
   (background-color :initform (theme-color :background))
-  (grid-size :initform 16)
-  (grid-width :initform 64)
-  (grid-height :initform 64))
+  (grid-size :initform 32)
+  (grid-width :initform 32)
+  (grid-height :initform 32))
 
-(define-block reactor-turtle)
+(define-block reactor-turtle :image "robot" :x 10 :y 10)
+
+(define-method draw reactor-turtle ())
 
 (define-method draw-wall reactor-turtle (segments &optional (size 32))
   (dotimes (n segments)
@@ -560,33 +673,43 @@
       (resize brick size size)
       (move-forward self (+ size 0.02)))))
 
-(define-method draw-square reactor-turtle (size)
+(define-method draw-square reactor-turtle (size &optional (segment-size 32))
   (dotimes (n 4)
-    (draw-wall self size)
+    (draw-wall self size segment-size)
     (turn-right self 90)))
 
 (define-method skip-wall reactor-turtle (segments)
   (move-forward self (+ 0.02 (* 32 segments))))
 
-(define-method draw-room reactor-turtle (size)
-  (dotimes (n 4)
-    (draw-wall self (- size 2))
-    (skip-wall self 2)
-    (draw-wall self 2)
-    (turn-right self 90)))
+(define-method draw-room reactor-turtle (size &optional (segment-size 32))
+  (let ((gap (1+ (random 2))))
+    (drop self (new base)
+	  (+ 32 (random 64))
+	  (+ 32 (random 64)))
+    (dotimes (n 4)
+      (draw-wall self (- size gap) segment-size)
+      (skip-wall self 2)
+      (draw-wall self 2 segment-size)
+      (turn-right self 90))))
+
+(define-method draw-base reactor-turtle ()
+  (setf %heading 0)
+  (percent-of-time 40 
+    (draw-room self (+ 7 (random 3)) (+ 8 (random 7))))
+  (skip-wall self 8))
     
 (define-method run reactor-turtle ()
-  (draw-square self 31))
-  ;; (skip-wall self 10)
-  ;; (turn-right self 90)
-  ;; (skip-wall self 10)
-  ;; (turn-left self 90)
-  ;; (draw-room self 10)
-  ;; (turn-left self 90)
-  ;; (skip-wall self 3)
-  ;; (draw-room self 6))
+  (draw-square self 31)
+  (move-to self 90 90)
+  (dotimes (n 3)
+    (draw-base self))
+  (move-to self 90 300)
+  (dotimes (n 3)
+    (draw-base self))
+  (move-to self 90 600))
 
-(define-method build reactor ()
+(define-method build reactor (level)
+  (setf *theme* (random-theme))
   (setf %window-scrolling-speed 4)
   (let ((*quadtree* %quadtree))
     (with-fields (grid-width grid-height) self
@@ -594,20 +717,31 @@
       (let ((turtle (new reactor-turtle)))
       	(drop self turtle)
       	(run turtle)
-      	(discard-block self turtle)))
-    (dotimes (n 2)
-      (add-block self (new carrier) 
-    		 (+ 100 (random 800))
-    		 (+ 100 (random 800))))
-    (dotimes (n 25)
-      (add-block self (new monitor) 
-    		 (+ 100 (random 800))
-    		 (+ 100 (random 800))))))
-    ;; (dotimes (n 3)
-    ;;   (add-block self (new biclops) 
-    ;; 		 (+ 400 (random 500))
-    ;; 		 (+ 400 (random 500))))))
+      	(destroy turtle)))))
 
+(define-method draw reactor ()
+  (draw%%world self)
+  (multiple-value-bind (top left right bottom)
+      (window-bounding-box self)
+    (let ((x (+ left (dash 5)))
+	  (y (- bottom (font-height *xalcyon-font*) (dash 2)))
+	  (label (format nil "CHIP: ~d        ITEM: ~A" 
+			 (field-value :chips (player))
+			 (field-value :item (player)))))
+      (draw-string label 
+		   x y :color "white"
+		   :font *xalcyon-font*))))
+
+(define-method update reactor ()
+  (update%%world self)
+  (unless %level-clear
+    (unless (block finding
+	      (loop for sprite being the hash-keys in %sprites do
+		(when (is-enemy sprite)
+		  (return-from finding t))))
+      (setf %level-clear t)
+      (win %player))))
+    
 (defun xalcyon ()
   (let ((robot (new robot))
 	(reactor (new reactor)))
@@ -616,8 +750,9 @@
     (new universe 
 	 :player robot
 	 :world reactor)
-    (build reactor)
-    (play-music "defmacron" :loop t)))
+    (play-music "xmrio" :loop t)
+    (build reactor 1)))
+;    (play-music "beatup" :loop t)))
 
 (define-method reset reactor ()
   (xalcyon))
