@@ -115,13 +115,16 @@
 (defparameter *soundtrack* 
   (defresource 
     (:name "beatup" :type :music :file "beatup.ogg")
-    (:name "vixon" :type :music :file "vixon.ogg")
     (:name "xmrio" :type :music :file "xmrio.ogg")
     (:name "phong" :type :music :file "phong.ogg")
     (:name "defmacron" :type :music :file "defmacron.ogg")
     (:name "ompula" :type :music :file "ompula.ogg")
     (:name "wraparound" :type :music :file "wraparound.ogg" :properties (:volume 200))
     (:name "xalcyon" :type :music :file "xalcyon.ogg")))
+
+(defresource 
+    (:name "vixon" :type :music :file "vixon.ogg")
+    (:name "nexttime" :type :music :file "nexttime.ogg"))
 
 ;;; Colored, themeable bricks that make up the environment
 
@@ -130,7 +133,7 @@
     (:tandy :background "black" :brick "red" :brick2 "gray40" :wall "gray20")
     (:vax :background "gray20" :brick "gray80" :brick2 "gray40" :wall "gray20")
     (:command :background "DarkOrange" :brick "gold" :brick2 "gray40" :wall "gray20")
-    (:maynard :background "gray10" :brick "goldenrod" :brick2 "gray40" :wall "gray20")
+    (:maynard :background "black" :brick "yellow" :brick2 "gray40" :wall "gray20")
     (:zerk :background "black" :brick "DeepSkyBlue" :brick2 "cyan" :wall "black")))
 
 (defun random-theme () (random-choose (mapcar #'car *themes*)))
@@ -145,6 +148,14 @@
     :tags '(:brick)
     :part :brick
     :color (theme-color))
+
+;; (define-method bounding-box brick ()
+;;   ;; shrink bounding box by 1 px to prevent adjacent bricks from
+;;   ;; resting contact
+;;   (with-field-values (x y height width) self
+;;     (+ 1 y) (+ 1 x)
+;;     (+ -1 x width)
+;;     (+ -1 y height)))
 
 (define-method damage brick (points) nil)
 
@@ -794,7 +805,7 @@
 (define-method update-shields robot ()
   (with-fields (shields heading) self
     (when shields
-      (charge self 0.36)
+      (charge self 0.43)
       (if (zerop %energy)
 	  (lower-shields self)
 	  (let ((angle (- heading (/ *shield-spread* 2)))
@@ -811,7 +822,9 @@
       (setf shields nil))))
 
 (define-method throw-bomb robot ()
-  (when %bomb-loaded
+  (when (and %bomb-loaded 
+	     (> %energy 40))
+    (charge self 40)
     (play-sample "bombs-away")
     (drop self (new bomb %heading))
     (setf %bomb-loaded nil)))
@@ -849,12 +862,14 @@
 
 (define-method recharge robot (amount)
   (assert (plusp amount))
-  (setf %energy 
-	(min 100 (incf %energy amount))))
+  ;; don't recharge while using shields or firing
+  (when (and %ready (null %shields))
+    (setf %energy 
+	  (min 100 (incf %energy amount)))))
 
 (define-method fire robot (heading)
   (when (and %ready (not %dead) (not (zerop %energy)))
-    (charge self 1)
+    (charge self 1.2)
     (setf %ready nil)
     (later 8 (reload self))
     (play-sound self "zap")
@@ -866,8 +881,9 @@
     (play-sound self (defresource :name "deathx" :type :sample :file "deathx.wav" :properties (:volume 100)))
     (setf %dead t)
     (let ((sign (new lose)))
-      (drop self sign 32 32))
-;      (center sign))
+      (drop self sign 32 32)
+      (center sign))
+    (play-music "nexttime")
     (percent-of-time 70
       (let ((message (random-choose '("vox-shield-warning" "vox-hazard" "vox-shutdown" "vox-you-lose"))))
 	(later 1.4 (say self message))))
@@ -931,7 +947,7 @@
     (decf %timer)
     (when (zerop %timer)
       (setf %timer 100)
-      (percent-of-time 8
+      (percent-of-time 10
 	(play-sample "vox-radiation")
 	(dotimes (n 3)
 	  (drop self (new glitch))))
@@ -975,7 +991,7 @@
     (turn-right self 90)))
 
 (define-method skip-wall reactor-turtle (segments)
-  (move-forward self (+ 0.02 (* 32 segments))))
+  (move-forward self (* 32 segments)))
 
 (define-method draw-room reactor-turtle (size &optional (segment-size 32))
   (drop self (new base)
@@ -1003,10 +1019,11 @@
   (move-to self (random-choose '(200 400 600)) 730)
   (draw-base self)
   (percent-of-time 50
+    (percent-of-time 70 (skip-wall self (random-choose '(1 2))))
     (move-to self (random-choose '(30 60 80)) (random-choose '(520 560 620)))
     (draw-wall self (random-choose '(20 30)) 16)
-    (percent-of-time 50 (skip-wall self (random-choose '(1 2 3))))
-    (draw-wall self (random-choose '(15 30 40)) 16)))
+    (percent-of-time 70 (skip-wall self (random-choose '(1 2 3 4))))
+    (draw-wall self (random-choose '(15 10)) 16)))
 
 (define-method build reactor (level)
   (setf *theme* (random-theme))
