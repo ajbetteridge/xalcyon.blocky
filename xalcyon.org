@@ -1,0 +1,48 @@
+* TODO sticky bomb
+* TODO display level number
+* TODO create a really proper level generation framework that auto-sizes things
+** TODO area templates
+*** TODO open area with 1 or 2 small base rooms and just monitors
+*** TODO level divided into two unequal portions by a barrier with a gap, and moving enemies who spawn color creepers
+*** TODO concentric squares with lines of glass bricks and a stationary megaboss in middle (WARNING MESSAGE)
+    
+* TODO easily distinguishable objects that reflect bullets 
+* TODO boss with bullets that grow larger and faster as they approach you, but move in straight line
+
+* TODO [#C] :target tag causes onscreen highlight (i.e. bubble)
+* TODO [#C] freeze trail to create walls
+  
+* DONE redzone warning sound
+  CLOSED: [2012-02-03 Fri 03:10]
+* DONE shield with limited use, only faces the dir you are shooting.
+  CLOSED: [2012-02-03 Fri 03:10]
+* DONE as in Xong---ONE hit kills
+  CLOSED: [2012-02-01 Wed 16:45]
+* DONE bases move around slowly like aircraft carriers
+  CLOSED: [2012-02-01 Wed 16:45]
+* DONE the trail is your shield. 
+  CLOSED: [2012-02-01 Wed 16:47]
+
+* DONE player bullets have limited range
+  CLOSED: [2012-02-01 Wed 20:36]
+
+* DONE "chips" are the XP and currency (you buy upgrades/items)
+  CLOSED: [2012-02-01 Wed 20:36]
+* DONE chips are left behind by enemies or found in crates
+  CLOSED: [2012-02-01 Wed 20:36]
+* DONE level completion when all targets/bases are destroyed
+  CLOSED: [2012-02-02 Thu 15:00]
+
+* DONE non-moving bases that spawn enemies
+  CLOSED: [2012-02-02 Thu 15:00]
+* DONE display word "WIN" or "LOES" 
+  CLOSED: [2012-02-02 Thu 09:19]
+* DONE energy meter
+  CLOSED: [2012-02-02 Thu 17:41]
+* DONE sweeping the trail across bouncing Chip particles is the only way to pick them up
+  CLOSED: [2012-02-01 Wed 20:36]
+
+i just had an idea about fan-reward DLC. i could charge them $5 for a
+good size mission/content/scenario pack and then ask them as a
+courtesy not to upload it for 2 weeks
+
