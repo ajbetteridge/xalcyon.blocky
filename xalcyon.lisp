@@ -638,7 +638,7 @@
 (define-method collide explosion (thing)
   (when (is-brick thing) 
     (restore-location self))
-  (damage thing 1))
+  (damage thing 0.5))
 
 (defun make-explosion (thing &optional (size 8))
   (dotimes (n size)
