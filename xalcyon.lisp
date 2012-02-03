@@ -42,6 +42,17 @@
 
 ;;; Some sounds
 
+
+(defparameter *vox-sounds*
+  (defresource 
+      (:name "vox-energy" :type :sample :file "vox-energy.wav" :properties (:volume 180))
+      (:name "vox-hazard" :type :sample :file "vox-hazard.wav" :properties (:volume 180))
+      (:name "vox-message" :type :sample :file "vox-message.wav" :properties (:volume 180))
+      (:name "vox-radiation" :type :sample :file "vox-radiation.wav" :properties (:volume 180))
+      (:name "vox-repair" :type :sample :file "vox-repair.wav" :properties (:volume 180))
+      (:name "vox-restore" :type :sample :file "vox-restore.wav" :properties (:volume 180))
+      (:name "vox-shield-warning" :type :sample :file "vox-shield-warning.wav" :properties (:volume 180))))
+
 (defresource 
     (:name "xplod"
      :type :sample :file "xplod.wav" 
@@ -223,7 +234,7 @@
 (define-block bullet 
   :radius 3
   :speed 4.2
-  :clock 60
+  :timer 60
   :blend :alpha
   :growth-rate nil
   :tags '(:bullet))
@@ -237,8 +248,8 @@
 	       :type :solid))
 	      
 (define-method update bullet ()
-  (decf %clock)
-  (if (zerop %clock) 
+  (decf %timer)
+  (if (zerop %timer) 
       (destroy self)
       (move-forward self %speed)))
 
@@ -253,6 +264,7 @@
     ;; (and through the player)
     ((and (is-player-bullet self)
 	  (or (is-trail thing)
+	      (is-shield thing)
 	      (is-player-bullet thing)
 	      (is-robot thing)))
      nil)
@@ -277,11 +289,11 @@
 	 (damage thing 1)
 	 (destroy self)))))
 
-(define-method initialize bullet (heading &key tags speed radius clock)
+(define-method initialize bullet (heading &key tags speed radius timer)
   (super%initialize self)
   (setf %heading heading)
   (when speed (setf %speed speed))
-  (when clock (setf %clock clock))
+  (when timer (setf %timer timer))
   (when radius (setf %radius radius))
   (when tags
     (dolist (tag tags)
@@ -443,7 +455,7 @@
     (dotimes (n 2)
       (drop self (new bullet 
 		      (+ (heading-to-player self) -1.5 (random 3.2))
-		      :clock 100)))))
+		      :timer 100)))))
 
 ;;; Carriers
 
@@ -479,7 +491,7 @@
 
 (define-method update carrier ()
   (when (> 550 (distance-to-player self))
-    (percent-of-time 3.5 
+    (percent-of-time 20 
       (drop self (new glitch) 40 40)))
   (move-toward self %direction 1))
 
@@ -525,6 +537,38 @@
   (when (is-enemy thing)
     (destroy thing)))
 
+;;; Player shield
+
+(defun is-shield (thing)
+  (has-tag thing :shield))
+
+(defparameter *shield-hums*
+  (defresource 
+      (:name "shield-hum1" :type :sample :file "shield-hum1.wav" :properties (:volume 8))
+      (:name "shield-hum2" :type :sample :file "shield-hum2.wav" :properties (:volume 8))))
+
+(defresource 
+    (:name "shield-bounce"
+     :type :sample :file "shield-bounce.wav" 
+     :properties (:volume 90)))
+
+(defparameter *shield-images*
+  (defresource
+      (:name "shield1" :type :image :file "shield1.png")
+      (:name "shield2" :type :image :file "shield2.png")
+    (:name "shield3" :type :image :file "shield3.png")))
+
+(define-block shield :image "shield3" :tags '(:shield))
+
+(define-method update shield ()
+  (percent-of-time 8 (play-sample (random-choose *shield-hums*)))
+  (setf %image (random-choose *shield-images*)))
+
+(define-method collide shield (thing)
+  (when (is-enemy-bullet thing)
+    (play-sample "shield-bounce")
+    (destroy thing)))
+
 ;;; The player
 
 (defresource
@@ -547,11 +591,28 @@
   (image :initform "robot")
   (height :initform 16)
   (width :initform 16)
-  (energy :initform 4)
+  (hp :initform 3)
+  (speech-timer :initform 0)
+  (energy :initform 100)
+  (recharge-timer :initform 0)
+  (trail-timer :initform 2)
   (chips :initform 0)
-  (item :initform nil)
+  (item :initform :shield)
+  (shields :initform nil)
   (tags :initform '(:robot))
   (speed :initform 2))
+
+(define-method say robot (sample)
+  (with-fields (speech-timer) self
+    (when (zerop speech-timer)
+      (play-sample sample)
+      (setf speech-timer 200))))
+
+(define-method initialize robot ()
+  (super%initialize self)
+  (bind-event self '(:joystick :button-down :r2) :raise-shields)
+  (bind-event self '(:joystick :button-up :r2) :lower-shields))
+
 
 ;; (define-method draw robot ()
 ;;   (super%draw self)
@@ -573,11 +634,40 @@
 	    (+ %x %width (- margin))
 	    (+ %y %height (- margin)))))
 
+(defparameter *shield-spread* (radian-angle 150))
+(defparameter *shield-units* 12)
+(defparameter *shield-distance* 50)
+
+(define-method raise-shields robot ()
+  (with-fields (energy heading) self
+    (when (plusp energy)
+      (let (shields)
+	(dotimes (n *shield-units*)
+	  (push (new shield) shields)
+	  (drop self (first shields))
+	  (setf %shields shields))))))
+
+(define-method update-shields robot ()
+  (with-fields (shields heading) self
+    (when shields
+      (charge self 0.32)
+      (if (zerop %energy)
+	  (lower-shields self)
+	  (let ((angle (- heading (/ *shield-spread* 2)))
+		(delta (/ *shield-spread* *shield-units*)))
+	    (dolist (shield shields)
+	      (multiple-value-bind (x y) (step-toward-heading self angle *shield-distance*)
+		(move-to shield (- x 4) (- y 4))
+		(incf angle delta))))))))
+
+(define-method lower-shields robot ()
+  (with-fields (shields) self
+    (when shields
+      (mapc #'destroy shields)
+      (setf shields nil))))
+
 (define-method reset robot ()
   (xalcyon))
-
-(define-method increase-energy robot (n)
-  (incf %energy n))
 
 (define-method reload robot ()
   (setf %ready t))
@@ -585,8 +675,19 @@
 (defun player-bullet (heading)
   (new bullet heading :speed 7 :tags '(:player)))
 
+(define-method charge robot (amount)
+  (assert (plusp amount))
+  (setf %energy 
+	(max 0 (decf %energy amount))))
+
+(define-method recharge robot (amount)
+  (assert (plusp amount))
+  (setf %energy 
+	(min 100 (incf %energy amount))))
+
 (define-method fire robot (heading)
-  (when (and %ready (not %dead))
+  (when (and %ready (not %dead) (not (zerop %energy)))
+    (charge self 1)
     (setf %ready nil)
     (later 8 (reload self))
     (play-sound self "zap")
@@ -600,6 +701,9 @@
     (let ((sign (new lose)))
       (drop self sign 32 32))
 ;      (center sign))
+    (percent-of-time 30
+      (let ((message (random-choose '("vox-shield-warning" "vox-repair" "vox-hazard"))))
+	(later 1.0 (say self message))))
     (change-image self (defresource :name "skull" :type :image :file "skull.png"))))
 
 (define-method win robot ()
@@ -618,31 +722,48 @@
   (setf %heading angle))
 
 (define-method drop-trail-maybe robot ()
-  (decf %energy)
-  (when (zerop %energy)
+  (decf %trail-timer)
+  (when (zerop %trail-timer)
     (drop self (new trail) 6 6)
-    (setf %energy 2)))
+    (setf %trail-timer 2)))
+
+(define-method auto-recharge robot ()
+  (with-fields (dead recharge-timer) self
+    (when (zerop recharge-timer)
+      (setf recharge-timer 50)
+      (recharge self 1))
+    (decf recharge-timer)))
 
 (define-method update robot ()
   (when (not %dead)
+    (when (plusp %speech-timer)
+      (decf %speech-timer))
+    (when (< %energy 20)
+      (say self "vox-energy"))
+    (auto-recharge self)
+    (update-shields self)
     (when (left-analog-stick-pressed-p)
       (aim self (left-analog-stick-heading))
       (move-forward self 3.5)
       (drop-trail-maybe self))
     (when (right-analog-stick-pressed-p)
+      (aim self (right-analog-stick-heading))
       (fire self (right-analog-stick-heading)))))
 
 ;;; Stationary bases that generate enemies
 
 (defresource (:name "base" :type :image :file "generator.png"))
 
-(define-block base :image "base" :ready nil :clock 70 :tags '(:enemy) :hp 15)
+(define-block base :image "base" :ready nil :timer 70 :tags '(:enemy) :hp 15)
 
 (define-method update base ()
   (when (< (distance-to-player self) 300)
-    (decf %clock)
-    (when (zerop %clock)
-      (setf %clock 80)
+    (decf %timer)
+    (when (zerop %timer)
+      (setf %timer 80)
+      (percent-of-time 4 
+	(dotimes (n 3)
+	  (drop self (new glitch))))
       (drop self (new monitor)))))
 
 (define-method damage base (points)
@@ -653,7 +774,6 @@
     (play-sound self "xplod")
     (drop-chips self :value-multiplier 10 :count 8)
     (destroy self)))
-
 
 ;;; The reactor
 
@@ -723,16 +843,32 @@
 
 (define-method draw reactor ()
   (draw%%world self)
+  ;; heads up display
   (multiple-value-bind (top left right bottom)
       (window-bounding-box self)
-    (let ((x (+ left (dash 5)))
-	  (y (- bottom (font-height *xalcyon-font*) (dash 2)))
-	  (label (format nil "CHIP: ~d        ITEM: ~A" 
-			 (field-value :chips (player))
-			 (field-value :item (player)))))
+    (with-field-values (energy chips item) (player)
+    (let* ((font *xalcyon-font*)
+	   (line-height (font-height font))
+	   (x (+ left (dash 5)))
+	   (y (- bottom line-height (dash 2)))
+	   (label (format nil "ENERGY: ~3,2f      CHIP: ~d       ITEM: ~A" 
+			  energy chips item))
+	   (bar-width 200))
+      ;; draw energy bar 
+      (draw-box x y bar-width line-height :color "gray30")
+      (when (plusp energy)
+	(draw-box x y (* 2 energy) line-height 
+		  :color (cond 
+			   ((>= energy 85) "green")
+			   ((>= energy 70) "yellow")
+			   ((>= energy 40) "orange")
+			   ((>= 20 energy) "red")
+			   (t "orange"))))
+      ;; show stats
       (draw-string label 
-		   x y :color "white"
-		   :font *xalcyon-font*))))
+		   (+ x 200 (dash)) y 
+		   :color "white"
+		   :font *xalcyon-font*)))))
 
 (define-method update reactor ()
   (update%%world self)
@@ -752,9 +888,9 @@
     (new universe 
 	 :player robot
 	 :world reactor)
-    (play-music (random-choose '("phong" "beatup" "wraparound" "defmacron")) :loop t)
     (build reactor 1)))
-;    (play-music "beatup" :loop t)))
+    ;; (play-music (random-choose '("phong" "beatup" "wraparound" "defmacron")) :loop t)
+    ;; (play-music "beatup" :loop t)))
 
 (define-method reset reactor ()
   (xalcyon))
