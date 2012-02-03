@@ -50,7 +50,7 @@
       (:name "vox-message" :type :sample :file "vox-message.wav" :properties (:volume 180))
       (:name "vox-radiation" :type :sample :file "vox-radiation.wav" :properties (:volume 180))
       (:name "vox-repair" :type :sample :file "vox-repair.wav" :properties (:volume 180))
-      (:name "vox-restore" :type :sample :file "vox-restore.wav" :properties (:volume 180))
+    (:name "vox-restore" :type :sample :file "vox-restore.wav" :properties (:volume 180))
       (:name "vox-shield-warning" :type :sample :file "vox-shield-warning.wav" :properties (:volume 180))))
 
 (defresource 
@@ -63,6 +63,12 @@
       (:name "boop1" :type :sample :file "boop1.wav" :properties (:volume 20))
       (:name "boop2" :type :sample :file "boop2.wav" :properties (:volume 20))
     (:name "boop3" :type :sample :file "boop3.wav" :properties (:volume 20))))
+
+(defparameter *doorbell-sounds*
+  (defresource 
+      (:name "doorbell" :type :sample :file "doorbell.wav" :properties (:volume 20))
+      (:name "doorbell2" :type :sample :file "doorbell2.wav" :properties (:volume 20))
+    (:name "doorbell3" :type :sample :file "doorbell3.wav" :properties (:volume 20))))
 
 (defparameter *slam-sounds*
   (defresource 
@@ -161,6 +167,7 @@
     ((or (is-robot thing)
 	 (is-trail thing))
      (incf (field-value :chips (player)) %value)
+     (recharge (player) 14)
      (play-sound self "chip1")
      (destroy self))
     ((or (is-chip thing)
@@ -284,6 +291,14 @@
       (and (is-enemy-bullet self)
 	   (is-player-bullet thing)))
      nil)
+    ((is-brick thing)
+	 ;; (message "BULLET HIT: ~S" 
+	 ;; 	  (list (object-name (find-super thing))
+	 ;; 		(field-value :part thing)
+	 ;; 		(field-value :color thing)
+	 ;; 		(field-value :x thing)
+	 ;; 		(field-value :y thing)))
+     (destroy self))
     ;; by default, just damage whatever it is
     (t (when (has-method :damage thing)
 	 (damage thing 1)
@@ -299,7 +314,10 @@
     (dolist (tag tags)
       (add-tag self tag))))
 
-;;; Corruption glitches that spread
+;;; Radioactive corruption glitches that creep after you
+
+(defun is-glitch (thing)
+  (has-tag thing :glitch))
 
 (defparameter *corruption-images*
   (defresource 
@@ -325,7 +343,7 @@
 (defresource (:name "bigboom" :type :sample :file "bigboom.wav" :properties (:volume 60)))
 
 (define-block glitch
-  (tags :initform '(:enemy))
+  (tags :initform '(:enemy :glitch))
   (image :initform (random-choose *corruption-images*))
   (speed :initform 1)
   (overlay-color :initform nil))
@@ -534,8 +552,9 @@
   (later 2.7 (destroy self)))
 
 (define-method collide trail (thing)
-  (when (is-enemy thing)
-    (destroy thing)))
+  (unless (is-glitch thing)
+    (when (is-enemy thing)
+      (destroy thing))))
 
 ;;; Player shield
 
@@ -544,8 +563,8 @@
 
 (defparameter *shield-hums*
   (defresource 
-      (:name "shield-hum1" :type :sample :file "shield-hum1.wav" :properties (:volume 8))
-      (:name "shield-hum2" :type :sample :file "shield-hum2.wav" :properties (:volume 8))))
+      (:name "shield-hum1" :type :sample :file "shield-hum1.wav" :properties (:volume 30))
+      (:name "shield-hum2" :type :sample :file "shield-hum2.wav" :properties (:volume 30))))
 
 (defresource 
     (:name "shield-bounce"
@@ -566,7 +585,7 @@
 
 (define-method collide shield (thing)
   (when (is-enemy-bullet thing)
-    (play-sample "shield-bounce")
+    (play-sample "doorbell")
     (destroy thing)))
 
 ;;; The player
@@ -606,13 +625,14 @@
   (with-fields (speech-timer) self
     (when (zerop speech-timer)
       (play-sample sample)
-      (setf speech-timer 200))))
+      (setf speech-timer 280))))
 
 (define-method initialize robot ()
   (super%initialize self)
-  (bind-event self '(:joystick :button-down :r2) :raise-shields)
-  (bind-event self '(:joystick :button-up :r2) :lower-shields))
-
+  (bind-event self '(:joystick :button-down :l2) :raise-shields)
+  (bind-event self '(:joystick :button-up :l2) :lower-shields))
+  ;; (bind-event self '(:joystick :button-down :r2) :start-firing)
+  ;; (bind-event self '(:joystick :button-up :r2) :stop-firing))
 
 ;; (define-method draw robot ()
 ;;   (super%draw self)
@@ -650,7 +670,7 @@
 (define-method update-shields robot ()
   (with-fields (shields heading) self
     (when shields
-      (charge self 0.32)
+      (charge self 0.36)
       (if (zerop %energy)
 	  (lower-shields self)
 	  (let ((angle (- heading (/ *shield-spread* 2)))
@@ -701,9 +721,9 @@
     (let ((sign (new lose)))
       (drop self sign 32 32))
 ;      (center sign))
-    (percent-of-time 30
+    (percent-of-time 50
       (let ((message (random-choose '("vox-shield-warning" "vox-repair" "vox-hazard"))))
-	(later 1.0 (say self message))))
+	(later 1.4 (say self message))))
     (change-image self (defresource :name "skull" :type :image :file "skull.png"))))
 
 (define-method win robot ()
@@ -730,8 +750,8 @@
 (define-method auto-recharge robot ()
   (with-fields (dead recharge-timer) self
     (when (zerop recharge-timer)
-      (setf recharge-timer 50)
-      (recharge self 1))
+      (setf recharge-timer 10)
+      (recharge self 2))
     (decf recharge-timer)))
 
 (define-method update robot ()
@@ -746,10 +766,13 @@
       (aim self (left-analog-stick-heading))
       (move-forward self 3.5)
       (drop-trail-maybe self))
-    (when (right-analog-stick-pressed-p)
-      (aim self (right-analog-stick-heading))
-      (fire self (right-analog-stick-heading)))))
-
+    (if (right-analog-stick-pressed-p)
+	(progn (aim self (right-analog-stick-heading))
+	       (when (joystick-button-pressed-p :r2)
+		 (fire self (right-analog-stick-heading))))
+	(when (joystick-button-pressed-p :r2)
+	  (fire self %heading)))))
+	
 ;;; Stationary bases that generate enemies
 
 (defresource (:name "base" :type :image :file "generator.png"))
@@ -757,11 +780,12 @@
 (define-block base :image "base" :ready nil :timer 70 :tags '(:enemy) :hp 15)
 
 (define-method update base ()
-  (when (< (distance-to-player self) 300)
+  (when (< (distance-to-player self) 240)
     (decf %timer)
     (when (zerop %timer)
-      (setf %timer 80)
-      (percent-of-time 4 
+      (setf %timer 100)
+      (percent-of-time 6
+	(play-sample "vox-radiation")
 	(dotimes (n 3)
 	  (drop self (new glitch))))
       (drop self (new monitor)))))
