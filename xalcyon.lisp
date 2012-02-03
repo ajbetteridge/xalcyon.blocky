@@ -40,8 +40,24 @@
 (defun is-target (thing)
   (has-tag thing :target))
 
-;;; Some sounds
+;;; Some sounds and images
 
+(defparameter *plasmon-images*
+  (defresource 
+      (:name "plasmon1" :type :image :file "plasmon1.png")
+      (:name "plasmon2" :type :image :file "plasmon2.png")
+    (:name "plasmon3" :type :image :file "plasmon3.png")
+    (:name "plasmon4" :type :image :file "plasmon4.png")
+    (:name "plasmon5" :type :image :file "plasmon5.png")))
+
+(defresource
+    (:name "plasmon-player" :type :image :file "plasmon-player.png"))
+
+(defparameter *plasmon-sounds*
+  (defresource 
+      (:name "pip1" :type :sample :file "pip1.wav" :properties (:volume 40))
+      (:name "pip2" :type :sample :file "pip2.wav" :properties (:volume 40))
+    (:name "pip3" :type :sample :file "pip1.wav" :properties (:volume 40))))
 
 (defparameter *vox-sounds*
   (defresource 
@@ -50,7 +66,13 @@
       (:name "vox-message" :type :sample :file "vox-message.wav" :properties (:volume 180))
       (:name "vox-radiation" :type :sample :file "vox-radiation.wav" :properties (:volume 180))
       (:name "vox-repair" :type :sample :file "vox-repair.wav" :properties (:volume 180))
-    (:name "vox-restore" :type :sample :file "vox-restore.wav" :properties (:volume 180))
+    (:name "vox-restored" :type :sample :file "vox-restored.wav" :properties (:volume 180))
+      (:name "vox-shield-pickup" :type :sample :file "vox-shield-pickup.wav" :properties (:volume 180))
+      (:name "vox-bomb-pickup" :type :sample :file "vox-bomb-pickup.wav" :properties (:volume 180))
+      (:name "vox-base-destroyed" :type :sample :file "vox-base-destroyed.wav" :properties (:volume 180))
+      (:name "vox-shutdown" :type :sample :file "vox-shutdown.wav" :properties (:volume 180))
+      (:name "vox-you-lose" :type :sample :file "vox-you-lose.wav" :properties (:volume 180))
+      (:name "vox-winning" :type :sample :file "vox-winning.wav" :properties (:volume 180))
       (:name "vox-shield-warning" :type :sample :file "vox-shield-warning.wav" :properties (:volume 180))))
 
 (defresource 
@@ -107,7 +129,7 @@
   '((:dec :background "DarkSlateBlue" :brick "SlateBlue" :brick2 "hot pink" :wall "Black")
     (:tandy :background "black" :brick "red" :brick2 "gray40" :wall "gray20")
     (:vax :background "gray20" :brick "gray80" :brick2 "gray40" :wall "gray20")
-    (:command :background "MediumBlue" :brick "yellow" :brick2 "gray40" :wall "gray20")
+    (:command :background "DarkOrange" :brick "gold" :brick2 "gray40" :wall "gray20")
     (:maynard :background "gray10" :brick "goldenrod" :brick2 "gray40" :wall "gray20")
     (:zerk :background "black" :brick "DeepSkyBlue" :brick2 "cyan" :wall "black")))
 
@@ -170,10 +192,7 @@
      (recharge (player) 14)
      (play-sound self "chip1")
      (destroy self))
-    ((or (is-chip thing)
-	 (is-bullet thing))
-     nil)
-    (t 
+    ((is-brick thing) 
      (restore-location self)
      (setf %heading (or (percent-of-time 85 (- pi %heading))
 			(- 1 %heading))))))
@@ -185,7 +204,7 @@
 	    (truncate (* value-multiplier (field-value :value chip))))
       (drop thing chip (random 10) (random 10)))))
 
-;;; Sparkle clouds
+;;; Sparkle explosion cloud fx
 
 (define-block spark 
   :width 3 :height 3
@@ -208,24 +227,7 @@
 		(new spark) 
 		(+ x (random 30)) (+ y (random 30)))))
 
-;;; A bullet
-
-(defparameter *plasmon-images*
-  (defresource 
-      (:name "plasmon1" :type :image :file "plasmon1.png")
-      (:name "plasmon2" :type :image :file "plasmon2.png")
-    (:name "plasmon3" :type :image :file "plasmon3.png")
-    (:name "plasmon4" :type :image :file "plasmon4.png")
-    (:name "plasmon5" :type :image :file "plasmon5.png")))
-
-(defresource
-    (:name "plasmon-player" :type :image :file "plasmon-player.png"))
-
-(defparameter *plasmon-sounds*
-  (defresource 
-      (:name "pip1" :type :sample :file "pip1.wav" :properties (:volume 40))
-      (:name "pip2" :type :sample :file "pip2.wav" :properties (:volume 40))
-    (:name "pip3" :type :sample :file "pip1.wav" :properties (:volume 40))))
+;;; Versatile bullets
 
 (defun is-bullet (thing)
   (has-tag thing :bullet))
@@ -389,7 +391,7 @@
      :alpha 0.2
      :color %overlay-color)))
 
-;;; Monitor enemy
+;;; The "monitor", a roving enemy that fires a spread of bullets then dashes away
 
 (defresource
     (:name "monitor" :type :image :file "monitor.png")
@@ -451,6 +453,7 @@
 
 (define-method collide monitor (thing)
   (when (not (or (is-enemy thing)
+		 (is-powerup thing)
 		 (is-chip thing)))
     (when (is-robot thing)
       (damage thing 1))
@@ -465,6 +468,7 @@
     (make-sparks (- %x 16) (- %y 16))
     (play-sound self "xplod")
     (drop-chips self)
+    (percent-of-time 60 (drop self (random-powerup)))
     (destroy self)))
 
 (define-method fire monitor (direction)
@@ -563,8 +567,8 @@
 
 (defparameter *shield-hums*
   (defresource 
-      (:name "shield-hum1" :type :sample :file "shield-hum1.wav" :properties (:volume 30))
-      (:name "shield-hum2" :type :sample :file "shield-hum2.wav" :properties (:volume 30))))
+      (:name "shield-hum1" :type :sample :file "shield-hum1.wav" :properties (:volume 20))
+      (:name "shield-hum2" :type :sample :file "shield-hum2.wav" :properties (:volume 20))))
 
 (defresource 
     (:name "shield-bounce"
@@ -580,13 +584,133 @@
 (define-block shield :image "shield3" :tags '(:shield))
 
 (define-method update shield ()
-  (percent-of-time 8 (play-sample (random-choose *shield-hums*)))
+  (percent-of-time 4 (play-sample (random-choose *shield-hums*)))
   (setf %image (random-choose *shield-images*)))
 
 (define-method collide shield (thing)
   (when (is-enemy-bullet thing)
     (play-sample "doorbell")
     (destroy thing)))
+
+;;; Sticky bombs
+
+(defun is-bomb (thing)
+  (has-tag thing :bomb))
+
+(defparameter *bomb-images*
+  (defresource 
+      (:name "bomb1" :type :image :file "bomb1.png")
+      (:name "bomb2" :type :image :file "bomb2.png")
+    (:name "bomb3" :type :image :file "bomb3.png")
+    (:name "bomb4" :type :image :file "bomb4.png")))
+
+(defparameter *explosion-images*
+  (defresource
+      (:name "bomb-flash1" :type :image :file "bomb-flash1.png")
+      (:name "bomb-flash2" :type :image :file "bomb-flash2.png")
+    (:name "bomb-flash3" :type :image :file "bomb-flash3.png")
+    (:name "explosion" :type :image :file "explosion.png")
+    (:name "explosion2" :type :image :file "explosion2.png")))
+
+(define-block explosion :timer (+ 20 (random 12)) :image "explosion")
+
+(define-method update explosion ()
+  (decf %timer)
+  (if (zerop %timer)
+      (destroy self)
+      (progn
+	(setf %image (random-choose *explosion-images*))
+	(percent-of-time 4 (play-sample "explode"))
+	(resize self (+ 16 (random 16)) (+ 16 (random 16)))
+	(move-toward self (random-direction) (+ 6 (random 8))))))
+
+(define-method collide explosion (thing)
+  (when (is-brick thing) 
+    (restore-location self))
+  (damage thing 1))
+
+(defun make-explosion (thing &optional (size 8))
+  (dotimes (n size)
+    (drop thing (new explosion))))
+  
+(defresource
+    (:name "mine" :type :image :file "bomb.png")
+    (:name "bomb-ammo" :type :image :file "bomb-ammo.png")
+    (:name "shield-ammo" :type :image :file "shield-ammo.png")
+    (:name "energy-ammo" :type :image :file "energy-ammo.png")
+    (:name "powerup" :type :sample :file "powerup.wav")
+    (:name "bombs-away" :type :sample :file "bombs-away.wav")
+    (:name "power" :type :sample :file "power.wav")
+    (:name "powerdown" :type :sample :file "powerdown.wav")
+    (:name "countdown" :type :sample :file "countdown.wav")
+    (:name "explode" :type :sample :file "explode.wav"))
+
+(define-block bomb :timer 0 :countdown 5 :image "bomb4" :target nil)
+
+(define-method explode bomb ()
+  (make-explosion self)
+  (destroy self))
+
+(define-method initialize bomb (heading)
+  (super%initialize self)
+  (aim self heading))
+
+(define-method collide bomb (thing)
+  (cond ((is-enemy thing)
+	 (setf %target thing))
+	((is-brick thing)
+	 (restore-location self))))
+
+(define-method update bomb () 
+  (if %target
+      ;; stick to target once touched
+      (multiple-value-bind (x y) (center-point %target)
+	(move-to self x y))
+      ;; move in straight line to find target
+      (move-forward self 6))
+  ;; possibly explode and/or update timer
+  (with-fields (countdown timer image) self
+    (if (zerop countdown)
+	(explode self)
+	(if (plusp timer)
+	    (decf timer)
+	    (progn
+	      (setf timer 20)
+	      (play-sample "countdown")
+	      (decf countdown)
+	      (setf image (nth countdown *bomb-images*)))))))
+
+(defun is-powerup (thing)
+  (has-tag thing :powerup))
+
+(define-block bomb-ammo :image "bomb-ammo" :tags '(:powerup))
+
+(define-method collide bomb-ammo (thing)
+  (when (is-robot thing)  
+    (play-sample "powerup")
+    (play-sample "vox-bomb-pickup")
+    (equip thing :bomb)
+    (destroy self)))
+
+(define-block shield-ammo :image "shield-ammo" :tags '(:powerup))
+
+(define-method collide shield-ammo (thing)
+  (when (is-robot thing)
+    (play-sample "powerup")
+    (play-sample "vox-shield-pickup")
+    (equip thing :shield)
+    (destroy self)))
+
+(define-block energy-ammo :image "energy-ammo" :tags '(:powerup))
+
+(define-method collide energy-ammo (thing)
+  (when (is-robot thing)
+    (play-sample "vox-restored")
+    (recharge thing 100)
+    (destroy self)))
+
+(defun random-powerup ()
+  (clone (random-choose '("XALCYON:ENERGY-AMMO" "XALCYON:BOMB-AMMO" "XALCYON:SHIELD-AMMO"))))
 
 ;;; The player
 
@@ -612,6 +736,7 @@
   (width :initform 16)
   (hp :initform 3)
   (speech-timer :initform 0)
+  (bomb-loaded :initform t)
   (energy :initform 100)
   (recharge-timer :initform 0)
   (trail-timer :initform 2)
@@ -629,17 +754,16 @@
 
 (define-method initialize robot ()
   (super%initialize self)
-  (bind-event self '(:joystick :button-down :l2) :raise-shields)
-  (bind-event self '(:joystick :button-up :l2) :lower-shields))
+  (bind-event self '(:joystick :button-down :l2) :activate-extension)
+  (bind-event self '(:joystick :button-up :l2) :deactivate-extension))
   ;; (bind-event self '(:joystick :button-down :r2) :start-firing)
   ;; (bind-event self '(:joystick :button-up :r2) :stop-firing))
 
-;; (define-method draw robot ()
-;;   (super%draw self)
-;;   (when (not %dead)
-;;     (multiple-value-bind (x0 y0) (center-point self)
-;;       (multiple-value-bind (x y) (step-in-direction x0 y0 %direction 4)
-;; 	(draw-circle x y 3 :color "red" :type :solid)))))
+(define-method draw robot ()
+  (super%draw self)
+  (when (not %dead)
+    (multiple-value-bind (x y) (step-toward-heading self %heading 20)
+      (draw-circle x y 3 :color (random-choose '("cyan" "white")) :type :solid))))
 
 (defresource 
     (:name "zap" :type :sample :file "zap.wav" :properties (:volume 30))
@@ -686,6 +810,29 @@
       (mapc #'destroy shields)
       (setf shields nil))))
 
+(define-method throw-bomb robot ()
+  (when %bomb-loaded
+    (play-sample "bombs-away")
+    (drop self (new bomb %heading))
+    (setf %bomb-loaded nil)))
+
+(define-method load-bomb robot ()
+  (setf %bomb-loaded t))
+
+(define-method activate-extension robot ()
+  (ecase %item
+    (:shield (raise-shields self))
+    (:bomb (throw-bomb self))))
+
+(define-method deactivate-extension robot ()
+  (ecase %item
+    (:shield (lower-shields self))
+    (:bomb (load-bomb self))))
+
+(define-method equip robot (item)
+  (setf %item item)
+  (when %shields (lower-shields self)))
+
 (define-method reset robot ()
   (xalcyon))
 
@@ -721,8 +868,8 @@
     (let ((sign (new lose)))
       (drop self sign 32 32))
 ;      (center sign))
-    (percent-of-time 50
-      (let ((message (random-choose '("vox-shield-warning" "vox-repair" "vox-hazard"))))
+    (percent-of-time 70
+      (let ((message (random-choose '("vox-shield-warning" "vox-hazard" "vox-shutdown" "vox-you-lose"))))
 	(later 1.4 (say self message))))
     (change-image self (defresource :name "skull" :type :image :file "skull.png"))))
 
@@ -784,7 +931,7 @@
     (decf %timer)
     (when (zerop %timer)
       (setf %timer 100)
-      (percent-of-time 6
+      (percent-of-time 8
 	(play-sample "vox-radiation")
 	(dotimes (n 3)
 	  (drop self (new glitch))))
@@ -795,7 +942,10 @@
   (play-sound self (random-choose *whack-sounds*))
   (when (zerop %hp)
     (make-sparks (- %x 16) (- %y 16))
+    (make-explosion self)
+    (play-sound self "bigboom")
     (play-sound self "xplod")
+    (play-sound self "vox-base-destroyed")
     (drop-chips self :value-multiplier 10 :count 8)
     (destroy self)))
 
@@ -828,31 +978,35 @@
   (move-forward self (+ 0.02 (* 32 segments))))
 
 (define-method draw-room reactor-turtle (size &optional (segment-size 32))
-  (let ((gap (1+ (random 2))))
-    (drop self (new base)
-	  (+ 32 (random 64))
-	  (+ 32 (random 64)))
-    (dotimes (n 4)
+  (drop self (new base)
+	(+ 32 (random 64))
+	(+ 32 (random 64)))
+  (dotimes (n 4)
+    (let ((gap (1+ (random 2))))
       (draw-wall self (- size gap) segment-size)
       (skip-wall self 2)
-      (draw-wall self 2 segment-size)
+      (draw-wall self size segment-size)
+      (percent-of-time 8 (skip-wall self 1))
       (turn-right self 90))))
 
 (define-method draw-base reactor-turtle ()
   (setf %heading 0)
-  (percent-of-time 40 
-    (draw-room self (+ 7 (random 3)) (+ 8 (random 7))))
+  (draw-room self (+ 7 (random 3)) (+ 8 (random 7)))
   (skip-wall self 8))
     
 (define-method run reactor-turtle ()
   (draw-square self 31)
-  (move-to self 90 90)
-  (dotimes (n 3)
-    (draw-base self))
-  (move-to self 90 300)
-  (dotimes (n 3)
-    (draw-base self))
-  (move-to self 90 600))
+  (move-to self (random-choose '(200 400 600)) 190)
+  (draw-base self)
+  (move-to self (random-choose '(200 400 600)) 590)
+;  (draw-base self)
+  (move-to self (random-choose '(200 400 600)) 730)
+  (draw-base self)
+  (percent-of-time 50
+    (move-to self (random-choose '(30 60 80)) (random-choose '(520 560 620)))
+    (draw-wall self (random-choose '(20 30)) 16)
+    (percent-of-time 50 (skip-wall self (random-choose '(1 2 3))))
+    (draw-wall self (random-choose '(15 30 40)) 16)))
 
 (define-method build reactor (level)
   (setf *theme* (random-theme))

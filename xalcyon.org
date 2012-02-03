@@ -1,11 +1,13 @@
-* TODO sticky bomb
+* TODO sticky bomb, delay/sound before firing ala howitzer
+* TODO characters that leave stationary mines
 * TODO display level number
 * TODO create a really proper level generation framework that auto-sizes things
 ** TODO area templates
 *** TODO open area with 1 or 2 small base rooms and just monitors
 *** TODO level divided into two unequal portions by a barrier with a gap, and moving enemies who spawn color creepers
 *** TODO concentric squares with lines of glass bricks and a stationary megaboss in middle (WARNING MESSAGE)
-    
+
+* TODO red shields in the doors of some bases to stop player just firing bomb from distance    
 * TODO easily distinguishable objects that reflect bullets 
 * TODO boss with bullets that grow larger and faster as they approach you, but move in straight line
 
