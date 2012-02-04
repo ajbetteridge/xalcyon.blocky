@@ -7,6 +7,9 @@ control.
 
 Requires Blocky: http://github.com/dto/blocky
 
+Please see the INSTALL file, and also "blocky-init.lisp" for
+instructions on how to configure the joystick.
+
 * Design doc (outdated)
 
 MicroXONG is a retro-remake of [[http://dto.github.com/notebook/xong.html][XONG]] with graphics, sound, and controls
