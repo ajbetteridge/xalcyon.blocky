@@ -1,3 +1,10 @@
+* Install 
+
+Requires Blocky: http://github.com/dto/blocky
+
+Please see the INSTALL file, and also "blocky-init.lisp" for
+instructions on how to configure the joystick.
+
 * About 
 
 XALCYON is a challenging multidirectional PC shooting game with dual
@@ -43,13 +50,6 @@ dangerous in groups. They turn red when they're badly damaged.
 
 Much more to come...
 
-* Install 
-
-Requires Blocky: http://github.com/dto/blocky
-
-Please see the INSTALL file, and also "blocky-init.lisp" for
-instructions on how to configure the joystick.
-
 * TODO create a really proper level generation framework that auto-sizes things
 ** TODO [#A] area templates
 ** TODO archive: a few monitors in a very simple berzerky environment.
@@ -64,6 +64,7 @@ instructions on how to configure the joystick.
 * TODO [#B] boss with bullets that grow larger and faster as they approach you, but move in straight line
 * TODO [#C] :target tag causes onscreen highlight (i.e. bubble)
 * TODO [#C] freeze trail to create walls
+
 
 * DONE sticky bomb, delay/sound before firing ala howitzer
   CLOSED: [2012-02-04 Sat 03:18]
