@@ -1145,7 +1145,7 @@
   (draw-square self 31)
   (move-to self (random-choose '(200 400 600)) 190)
   (draw-base self)
-  (drop self (new rook))
+;  (drop self (new rook))
   (move-to self (random-choose '(200 400 600)) 590)
   (move-to self (random-choose '(200 400 600)) 730)
   (draw-base self)
