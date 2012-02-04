@@ -186,7 +186,7 @@
 (define-block barrier 
   :hp 12
   :color "magenta"
-  :tags '(:barrier :brick))
+  :tags '(:barrier))
 
 (define-method draw barrier ()
   (percent-of-time 15 (setf %color (random-choose '("cyan" "DeepSkyBlue"))))
@@ -335,10 +335,6 @@
 	      (is-player-bullet thing)
 	      (is-robot thing)))
      nil)
-    ;; ;; enemy bullets cannot pass trail
-    ;; ((is-trail thing)
-    ;;  (play-sound self "bonux3")
-    ;;  (destroy self))
     ;; enemy bullets don't hurt enemies
     ;; or other enemy bullets
     ((or (is-enemy thing)
@@ -351,14 +347,6 @@
       (and (is-enemy-bullet self)
 	   (is-player-bullet thing)))
      nil)
-    ;; ((is-brick thing)
-    ;; 	 ;; (message "BULLET HIT: ~S" 
-    ;; 	 ;; 	  (list (object-name (find-super thing))
-    ;; 	 ;; 		(field-value :part thing)
-    ;; 	 ;; 		(field-value :color thing)
-    ;; 	 ;; 		(field-value :x thing)
-    ;; 	 ;; 		(field-value :y thing)))
-    ;;  (destroy self))
     ;; by default, just damage whatever it is
     (t (when (has-method :damage thing)
 	 (damage thing 1)
@@ -474,7 +462,6 @@
 
 (define-method flee monitor ()
   (setf %heading (+ pi (heading-to-player self)))
-;  (percent-of-time 5 (drop self (new glitch)))
   (move-forward self 3.2))
 
 (define-method stop-fleeing monitor ()
@@ -512,7 +499,9 @@
 (define-method collide monitor (thing)
   (when (not (or (is-enemy thing)
 		 (is-powerup thing)
-		 (is-chip thing)))
+		 (is-chip thing)
+		 ;; allow monitor to pass through barriers
+		 (is-barrier thing)))
     (when (is-robot thing)
       (damage thing 1))
     (restore-location self)
@@ -536,6 +525,63 @@
       (drop self (new bullet 
 		      (+ (heading-to-player self) -1.5 (random 3.2))
 		      :timer 100)))))
+
+;;; A bomber
+
+(defresource 
+    (:name "rook" :type :image :file "rook.png")
+    (:name "rook2" :type :image :file "rook2.png"))
+
+(define-block rook 
+  :image "rook2" 
+  :hp 10
+  :tags '(:rook :enemy)
+  :timer 0
+  :fleeing nil)
+
+(define-method damage rook (points)
+  (decf %hp)
+  (play-sound self (random-choose *whack-sounds*))
+  (when (zerop %hp)
+    (make-explosion self 5)
+    (play-sound self "xplod")
+    (drop-chips self :value-multiplier 5)
+    (percent-of-time 40 (drop self (random-powerup)))
+    (destroy self)))
+
+(define-method fire rook (heading)
+  (drop self (new bomb heading :origin self)))
+
+(define-method update rook ()
+  (with-fields (timer) self
+    (when (plusp timer)
+      (decf timer))
+    (let ((dir (heading-to-player self))
+	  (dist (distance-to-player self)))
+      (cond 
+	;; shoot bomb then set flag to run away
+	((and (< dist 250) 
+	      (zerop timer))
+	 (fire self dir)
+	 (setf timer 130))
+	;; begin approach after staying still
+	((and (< dist 420) (zerop timer))
+	 (aim self dir)
+	 (move-forward self 2))
+	;; run away fast
+	((and (< dist 420) (plusp timer))
+	 (aim self (- dir pi))
+	 (percent-of-time 2 (drop self (new bullet (heading-to-player self))))
+	 (move-forward self 4))
+	;; otherwise do nothing
+	))))
+
+(define-method collide rook (thing)
+  (cond 
+    ((is-brick thing)
+     (restore-location self))
+    ((is-robot thing)
+     (damage thing 1))))
 
 ;;; Carriers
 
@@ -658,6 +704,8 @@
 (defparameter *bomb-images*
   (defresource 
       (:name "bomb1" :type :image :file "bomb1.png")
+      ;; deliberate repeat
+      (:name "bomb1" :type :image :file "bomb1.png")
       (:name "bomb2" :type :image :file "bomb2.png")
     (:name "bomb3" :type :image :file "bomb3.png")
     (:name "bomb4" :type :image :file "bomb4.png")))
@@ -700,25 +748,42 @@
     (:name "bombs-away" :type :sample :file "bombs-away.wav")
     (:name "power" :type :sample :file "power.wav")
     (:name "powerdown" :type :sample :file "powerdown.wav")
-    (:name "countdown" :type :sample :file "countdown.wav" :properties (:volume 100))
+    (:name "countdown" :type :sample :file "countdown.wav" :properties (:volume 40))
     (:name "explode" :type :sample :file "explode.wav"))
 
-(define-block bomb :timer 0 :countdown 5 :image "bomb4" :target nil)
+(define-block bomb :timer 0 :countdown 5 
+  :image "bomb4" :target nil
+  :stopped nil :speed 3.7
+  :origin nil)
 
 (define-method explode bomb ()
   (make-explosion self)
   (destroy self))
 
-(define-method initialize bomb (heading)
+(define-method initialize bomb (heading &key origin)
   (super%initialize self)
-  (resize-to-image self)
+  (setf %image "bomb4")
+  (setf %origin origin)
   (aim self heading))
 
 (define-method collide bomb (thing)
-  (cond ((is-enemy thing)
-	 (setf %target thing))
-	((is-brick thing)
-	 (restore-location self))))
+  (cond 
+    ;; bombs should not stick to who fired them
+    ((and %origin 
+	  (is-enemy %origin)
+	  (is-enemy thing))
+     nil)
+    ;; enemy bombs stop at player
+    ((and %origin 
+	  (is-enemy %origin)
+	  (is-robot thing))
+     (setf %stopped t))
+    ;; stick to enemies
+    ((is-enemy thing)
+     (setf %target thing))
+    ;; stop at walls
+    ((is-brick thing)
+     (restore-location self))))
 
 (define-method update bomb () 
   (if %target
@@ -726,7 +791,8 @@
       (multiple-value-bind (x y) (center-point %target)
 	(move-to self x y))
       ;; move in straight line to find target
-      (move-forward self 6))
+      (unless %stopped
+	(move-forward self %speed)))
   ;; possibly explode and/or update timer
   (with-fields (countdown timer image) self
     (if (zerop countdown)
@@ -815,8 +881,6 @@
   (super%initialize self)
   (bind-event self '(:joystick :button-down :l2) :activate-extension)
   (bind-event self '(:joystick :button-up :l2) :deactivate-extension))
-  ;; (bind-event self '(:joystick :button-down :r2) :start-firing)
-  ;; (bind-event self '(:joystick :button-up :r2) :stop-firing))
 
 (define-method draw robot ()
   (super%draw self)
@@ -829,7 +893,7 @@
     (:name "paz" :type :sample :file "paz.wav" :properties (:volume 30))
     (:name "talk" :type :sample :file "talk.wav" :properties (:volume 20)))
 
-;; give the player a few extra 
+;; give the player a few extra pixels of hitbox room
 (define-method bounding-box robot ()
   (let ((margin 2))
     (values (+ %y margin) 
@@ -1081,9 +1145,11 @@
   (draw-square self 31)
   (move-to self (random-choose '(200 400 600)) 190)
   (draw-base self)
+  (drop self (new rook))
   (move-to self (random-choose '(200 400 600)) 590)
   (move-to self (random-choose '(200 400 600)) 730)
   (draw-base self)
+  (drop self (new rook))
   (percent-of-time 50
     (percent-of-time 70 (skip-wall self (random-choose '(1 2))))
     (move-to self (random-choose '(30 60 80)) (random-choose '(520 560 620)))
@@ -1147,13 +1213,14 @@
 (defun xalcyon ()
   (let ((robot (new robot))
 	(reactor (new reactor)))
+;    (play-music (random-choose *soundtrack*) :loop t)
     (set-location robot 60 60)
     (bind-event reactor '(:escape) :reset)
     (new universe 
 	 :player robot
 	 :world reactor)
-    (build reactor 1)
-    (play-music (random-choose *soundtrack*) :loop t)))
+    (build reactor 1)))
+
 
 (define-method reset reactor ()
   (xalcyon))
