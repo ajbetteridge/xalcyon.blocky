@@ -916,8 +916,10 @@
 	  (min 100 (incf %energy amount)))))
 
 (define-method fire robot (heading)
-  (when (and %ready (not %dead) (not (zerop %energy)))
-    (charge self 1.2)
+  (when (and %ready 
+	     (not %dead) 
+	     (> %energy 2))
+    (charge self 2)
     (setf %ready nil)
     (later 8 (reload self))
     (play-sound self "zap")
@@ -962,11 +964,14 @@
     (setf %trail-timer 2)))
 
 (define-method auto-recharge robot ()
-  (with-fields (dead recharge-timer) self
-    (when (zerop recharge-timer)
-      (setf recharge-timer 10)
-      (recharge self 2))
-    (decf recharge-timer)))
+  ;; don't recharge while firing or using shield
+  (unless (or (joystick-button-pressed-p :r2)
+	      (joystick-button-pressed-p :l2))
+    (with-fields (dead recharge-timer) self
+      (when (zerop recharge-timer)
+	(setf recharge-timer 10)
+	(recharge self 2))
+      (decf recharge-timer))))
 
 (define-method update robot ()
   (when (not %dead)
@@ -998,7 +1003,7 @@
     (decf %timer)
     (when (zerop %timer)
       (setf %timer 100)
-      (percent-of-time 13
+      (percent-of-time 20
 	(play-sample "vox-radiation")
 	(dotimes (n 3)
 	  (drop self (new glitch))))
@@ -1148,9 +1153,7 @@
 	 :player robot
 	 :world reactor)
     (build reactor 1)
-;    (play-music "remembering-xalcyon" :loop t)))
     (play-music (random-choose *soundtrack*) :loop t)))
-    ;; (play-music "beatup" :loop t)))
 
 (define-method reset reactor ()
   (xalcyon))
