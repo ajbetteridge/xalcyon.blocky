@@ -1,4 +1,13 @@
-* About
+* About 
+
+XALCYON is a multidirectional shooting game with dual analog stick
+control. 
+
+* Install 
+
+Requires Blocky: http://github.com/dto/blocky
+
+* Design doc (outdated)
 
 MicroXONG is a retro-remake of [[http://dto.github.com/notebook/xong.html][XONG]] with graphics, sound, and controls
 similar to those of an Intellivison or Atari 5200 game from the bygone
@@ -59,7 +68,6 @@ kills you.
 Player speed should be 1 pixel when shift is held (use in danger areas.)
 
 ** Difficulty A/B
-** Red
 
 
 
