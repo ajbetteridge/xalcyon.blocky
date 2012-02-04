@@ -50,15 +50,16 @@ dangerous in groups. They turn red when they're badly damaged.
 
 Much more to come...
 
-* TODO create a really proper level generation framework that auto-sizes things
-** TODO [#A] area templates
+* TODO [#A] create a really proper level generation framework that auto-sizes things
+** TODO [#A] grammars to generate phrases which are then interpreted by (monadic?) turtles
+** TODO [#A] allow running a turtle program in some blank world, then get bounding box for all objects and move them into place
 ** TODO archive: a few monitors in a very simple berzerky environment.
 ** TODO open area with 1 or 2 small base rooms with spewing monitors and radiation hazard
 ** TODO radiation vent chambers, simply subdivided, with guys who throw bombs at you
 ** TODO multi-ring concentric squares base
 ** TODO small rooms with item boxes so that often theres access to the bomb.
 ** TODO level divided into two unequal portions by a barrier with a gap, and moving enemies who spawn color creepers
-** TODO [#B] allow running a turtle program in some blank world, then get bounding box for all objects and move them into place
+* TODO [#B] larger faster more menacing-sounding radiation creepers
 * TODO [#B] display level number
 * TODO [#B] easily distinguishable objects that reflect size-increased bullets 
 * TODO [#B] boss with bullets that grow larger and faster as they approach you, but move in straight line
