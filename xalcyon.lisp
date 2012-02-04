@@ -25,6 +25,8 @@
 
 (in-package :xalcyon)
 
+(defvar *level* 1)
+
 (setf *screen-width* 800)
 (setf *screen-height* 600)
 (setf *window-title* "Xalcyon")
@@ -114,13 +116,14 @@
  
 (defparameter *soundtrack* 
   (defresource 
-    (:name "beatup" :type :music :file "beatup.ogg")
+;    (:name "beatup" :type :music :file "beatup.ogg")
     (:name "xmrio" :type :music :file "xmrio.ogg")
     (:name "phong" :type :music :file "phong.ogg")
-    (:name "defmacron" :type :music :file "defmacron.ogg")
-    (:name "ompula" :type :music :file "ompula.ogg")
-    (:name "wraparound" :type :music :file "wraparound.ogg" :properties (:volume 200))
-    (:name "xalcyon" :type :music :file "xalcyon.ogg")))
+    (:name "remembering-xalcyon" :type :music :file "remembering-xalcyon.ogg")
+;    (:name "defmacron" :type :music :file "defmacron.ogg")
+    (:name "ompula" :type :music :file "ompula.ogg")))
+;    (:name "wraparound" :type :music :file "wraparound.ogg" :properties (:volume 200))
+;    (:name "xalcyon" :type :music :file "xalcyon.ogg")))
 
 (defresource 
     (:name "vixon" :type :music :file "vixon.ogg")
@@ -133,7 +136,7 @@
     (:tandy :background "black" :brick "red" :brick2 "gray40" :wall "gray20")
     (:vax :background "gray20" :brick "gray80" :brick2 "gray40" :wall "gray20")
     (:command :background "DarkOrange" :brick "gold" :brick2 "gray40" :wall "gray20")
-    (:maynard :background "black" :brick "yellow" :brick2 "gray40" :wall "gray20")
+    (:maynard :background "black" :brick "DarkOrange" :brick2 "gray40" :wall "gray20")
     (:zerk :background "black" :brick "DeepSkyBlue" :brick2 "cyan" :wall "black")))
 
 (defun random-theme () (random-choose (mapcar #'car *themes*)))
@@ -145,17 +148,17 @@
     (getf (rest theme) part)))
 
 (define-block brick 
-    :tags '(:brick)
-    :part :brick
-    :color (theme-color))
+  :tags '(:brick)
+  :part :brick
+  :color (theme-color))
 
-;; (define-method bounding-box brick ()
-;;   ;; shrink bounding box by 1 px to prevent adjacent bricks from
-;;   ;; resting contact
-;;   (with-field-values (x y height width) self
-;;     (+ 1 y) (+ 1 x)
-;;     (+ -1 x width)
-;;     (+ -1 y height)))
+(define-method bounding-box brick ()
+  ;; shrink bounding box by 1 px to prevent adjacent bricks from
+  ;; resting contact
+  (with-field-values (x y height width) self
+    (values (+ 0.1 y) (+ 0.1 x)
+	    (+ -0.1 x width)
+	    (+ -0.1  y height))))
 
 (define-method damage brick (points) nil)
 
@@ -173,6 +176,44 @@
 
 (define-method draw brick ()
   (draw-box %x %y %width %height :color (theme-color %part)))
+
+;;; Breakable block barriers that pass enemies and enemy bullets but
+;;; not player bullets
+
+(defun is-barrier (thing)
+  (has-tag thing :barrier))
+
+(define-block barrier 
+  :hp 12
+  :color "magenta"
+  :tags '(:barrier :brick))
+
+(define-method draw barrier ()
+  (percent-of-time 15 (setf %color (random-choose '("cyan" "DeepSkyBlue"))))
+  (with-field-values (x y width height hp) self
+    (let ((edge (- 12 hp)))
+      (draw-box x y width height :color "magenta")
+      (draw-box (+ x edge) (+ y edge)
+		(- width (* edge 2))
+		(- height (* edge 2))
+		:color %color))))
+
+(define-method damage barrier (points)
+  (assert (plusp points))
+  (decf %hp points)
+  (make-sparks %x %y 1)
+  (play-sample "shield-bounce")
+  (when (zerop %hp)
+;    (make-sparks %x %y)
+    (destroy self)))
+
+(define-method bounding-box barrier ()
+  ;; shrink bounding box by 1 px to prevent adjacent bricks from
+  ;; resting contact
+  (with-field-values (x y height width) self
+    (values (+ 0.1 y) (+ 0.1 x)
+	    (+ -0.1 x width)
+	    (+ -0.1  y height))))
 
 ;;; Collectible "chips" which are the XP/currency/score all rolled into one
 
@@ -275,6 +316,12 @@
 
 (define-method collide bullet (thing)
   (cond 
+    ;; let enemy bullets pass through barriers
+    ((and (is-barrier thing)
+	  (is-enemy-bullet self))
+     nil)
+    ((is-powerup thing)
+     nil)
     ;; hit enemies with player bullets
     ((and (is-player-bullet self)
 	  (is-enemy thing))
@@ -304,14 +351,14 @@
       (and (is-enemy-bullet self)
 	   (is-player-bullet thing)))
      nil)
-    ((is-brick thing)
-	 ;; (message "BULLET HIT: ~S" 
-	 ;; 	  (list (object-name (find-super thing))
-	 ;; 		(field-value :part thing)
-	 ;; 		(field-value :color thing)
-	 ;; 		(field-value :x thing)
-	 ;; 		(field-value :y thing)))
-     (destroy self))
+    ;; ((is-brick thing)
+    ;; 	 ;; (message "BULLET HIT: ~S" 
+    ;; 	 ;; 	  (list (object-name (find-super thing))
+    ;; 	 ;; 		(field-value :part thing)
+    ;; 	 ;; 		(field-value :color thing)
+    ;; 	 ;; 		(field-value :x thing)
+    ;; 	 ;; 		(field-value :y thing)))
+    ;;  (destroy self))
     ;; by default, just damage whatever it is
     (t (when (has-method :damage thing)
 	 (damage thing 1)
@@ -380,10 +427,10 @@
 (define-method creep glitch ()
   (point-at-thing self (player))
   (move-forward self %speed)
-  (when (< (distance-to-player self) 420)
+  (when (< (distance-to-player self) 460)
     (percent-of-time 2 
       (play-sound self "munch1")
-      (let ((size (min 120 (* %height 1.2))))
+      (let ((size (min 220 (* %height 1.2))))
 	(resize self size size))
       (incf %speed 0.3))))
 
@@ -653,7 +700,7 @@
     (:name "bombs-away" :type :sample :file "bombs-away.wav")
     (:name "power" :type :sample :file "power.wav")
     (:name "powerdown" :type :sample :file "powerdown.wav")
-    (:name "countdown" :type :sample :file "countdown.wav")
+    (:name "countdown" :type :sample :file "countdown.wav" :properties (:volume 100))
     (:name "explode" :type :sample :file "explode.wav"))
 
 (define-block bomb :timer 0 :countdown 5 :image "bomb4" :target nil)
@@ -664,6 +711,7 @@
 
 (define-method initialize bomb (heading)
   (super%initialize self)
+  (resize-to-image self)
   (aim self heading))
 
 (define-method collide bomb (thing)
@@ -892,14 +940,17 @@
 (define-method win robot ()
   (play-music "vixon")
   (let ((sign (new win)))
-    (drop self sign 32 32)))
-;l    (center sign)))
+    (drop self sign 32 32)
+    (center sign)))
 
 (define-method collide robot (thing)
-  (when (is-enemy thing)
-    (damage self 1))
-  (when (is-brick thing)
-    (restore-location self)))
+  (cond
+    ((is-enemy thing)
+     (damage self 1))
+    ((is-barrier thing)
+     (damage self 1))
+    ((is-brick thing)
+     (restore-location self))))
 
 (define-method aim robot (angle)
   (setf %heading angle))
@@ -947,7 +998,7 @@
     (decf %timer)
     (when (zerop %timer)
       (setf %timer 100)
-      (percent-of-time 10
+      (percent-of-time 13
 	(play-sample "vox-radiation")
 	(dotimes (n 3)
 	  (drop self (new glitch))))
@@ -955,6 +1006,7 @@
 
 (define-method damage base (points)
   (decf %hp)
+  (make-sparks %x %y 1)
   (play-sound self (random-choose *whack-sounds*))
   (when (zerop %hp)
     (make-sparks (- %x 16) (- %y 16))
@@ -969,6 +1021,7 @@
 
 (define-world reactor
   level-clear
+  (enemy-count :initform nil)
   (background-color :initform (theme-color :background))
   (grid-size :initform 32)
   (grid-width :initform 32)
@@ -983,15 +1036,23 @@
     (let ((brick (new brick)))
       (drop self brick)
       (resize brick size size)
-      (move-forward self (+ size 0.02)))))
+      (move-forward self (+ size 0.01)))))
+
+(define-method draw-barrier reactor-turtle (segments &optional (size 32))
+  (move-forward self 0.1)
+  (dotimes (n segments)
+    (let ((barrier (new barrier)))
+      (drop self barrier)
+      (resize barrier (- size 1) (- size 1))
+      (move-forward self (+ size 0.01)))))
 
 (define-method draw-square reactor-turtle (size &optional (segment-size 32))
   (dotimes (n 4)
     (draw-wall self size segment-size)
     (turn-right self 90)))
 
-(define-method skip-wall reactor-turtle (segments)
-  (move-forward self (* 32 segments)))
+(define-method skip-wall reactor-turtle (segments &optional (segment-size 32))
+  (move-forward self (+ 0.1 (* segment-size segments))))
 
 (define-method draw-room reactor-turtle (size &optional (segment-size 32))
   (drop self (new base)
@@ -1000,14 +1061,15 @@
   (dotimes (n 4)
     (let ((gap (1+ (random 2))))
       (draw-wall self (- size gap) segment-size)
-      (skip-wall self 2)
+      (draw-barrier self 2)
       (draw-wall self size segment-size)
-      (percent-of-time 8 (skip-wall self 1))
+      (draw-barrier self (- size 1) segment-size)
+      (skip-wall self 1 segment-size)
       (turn-right self 90))))
 
 (define-method draw-base reactor-turtle ()
   (setf %heading 0)
-  (draw-room self (+ 7 (random 3)) (+ 8 (random 7)))
+  (draw-room self (+ 5 (random 5)) (+ 5 (random 5)))
   (skip-wall self 8))
     
 (define-method run reactor-turtle ()
@@ -1015,7 +1077,6 @@
   (move-to self (random-choose '(200 400 600)) 190)
   (draw-base self)
   (move-to self (random-choose '(200 400 600)) 590)
-;  (draw-base self)
   (move-to self (random-choose '(200 400 600)) 730)
   (draw-base self)
   (percent-of-time 50
@@ -1027,7 +1088,7 @@
 
 (define-method build reactor (level)
   (setf *theme* (random-theme))
-  (setf %window-scrolling-speed 4)
+  (setf %window-scrolling-speed 6)
   (let ((*quadtree* %quadtree))
     (with-fields (grid-width grid-height) self
       (move-window-to self 0 0)
@@ -1042,38 +1103,41 @@
   (multiple-value-bind (top left right bottom)
       (window-bounding-box self)
     (with-field-values (energy chips item) (player)
-    (let* ((font *xalcyon-font*)
-	   (line-height (font-height font))
-	   (x (+ left (dash 5)))
-	   (y (- bottom line-height (dash 2)))
-	   (label (format nil "ENERGY: ~3,2f      CHIP: ~d       ITEM: ~A" 
-			  energy chips item))
-	   (bar-width 200))
-      ;; draw energy bar 
-      (draw-box x y bar-width line-height :color "gray30")
-      (when (plusp energy)
-	(draw-box x y (* 2 energy) line-height 
-		  :color (cond 
-			   ((>= energy 85) "green")
-			   ((>= energy 70) "yellow")
-			   ((>= energy 40) "orange")
-			   ((>= 20 energy) "red")
-			   (t "orange"))))
-      ;; show stats
-      (draw-string label 
-		   (+ x 200 (dash)) y 
-		   :color "white"
-		   :font *xalcyon-font*)))))
-
+      (with-field-values (enemy-count) self
+	(let* ((font *xalcyon-font*)
+	       (line-height (font-height font))
+	       (x (+ left (dash 5)))
+	       (y (- bottom line-height (dash 2)))
+	       (label (format nil "ENERGY: ~3,2f    CHIP: ~d     ITEM: ~A     ENEMY: ~d" 
+			      energy chips item enemy-count))
+	       (bar-width 200))
+	  ;; draw energy bar 
+	  (draw-box x y bar-width line-height :color "gray30")
+	  (when (plusp energy)
+	    (draw-box x y (* 2 energy) line-height 
+		      :color (cond 
+			       ((>= energy 85) "chartreuse")
+			       ((>= energy 70) "yellow")
+			       ((>= energy 40) "orange")
+			       ((>= 20 energy) "red")
+			       (t "orange"))))
+	  ;; show stats
+	  (draw-string label 
+		       (+ x 200 (dash)) y 
+		       :color "white"
+		       :font *xalcyon-font*))))))
+  
 (define-method update reactor ()
   (update%%world self)
   (unless %level-clear
-    (unless (block finding
-	      (loop for sprite being the hash-keys in %sprites do
-		(when (is-enemy sprite)
-		  (return-from finding t))))
-      (setf %level-clear t)
-      (win %player))))
+    (let ((enemy-count 0))
+      (loop for sprite being the hash-keys in %sprites do
+	(when (is-enemy sprite)
+	  (incf enemy-count)))
+      (when (zerop enemy-count)
+	(setf %level-clear t)
+	(win %player))
+      (setf %enemy-count enemy-count))))
     
 (defun xalcyon ()
   (let ((robot (new robot))
@@ -1083,8 +1147,9 @@
     (new universe 
 	 :player robot
 	 :world reactor)
-    (build reactor 1)))
-    ;; (play-music (random-choose '("phong" "beatup" "wraparound" "defmacron")) :loop t)
+    (build reactor 1)
+;    (play-music "remembering-xalcyon" :loop t)))
+    (play-music (random-choose *soundtrack*) :loop t)))
     ;; (play-music "beatup" :loop t)))
 
 (define-method reset reactor ()
