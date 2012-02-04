@@ -50,6 +50,53 @@ Requires Blocky: http://github.com/dto/blocky
 Please see the INSTALL file, and also "blocky-init.lisp" for
 instructions on how to configure the joystick.
 
+* TODO create a really proper level generation framework that auto-sizes things
+** TODO [#A] area templates
+** TODO archive: a few monitors in a very simple berzerky environment.
+** TODO open area with 1 or 2 small base rooms with spewing monitors and radiation hazard
+** TODO radiation vent chambers, simply subdivided, with guys who throw bombs at you
+** TODO multi-ring concentric squares base
+** TODO small rooms with item boxes so that often theres access to the bomb.
+** TODO level divided into two unequal portions by a barrier with a gap, and moving enemies who spawn color creepers
+** TODO [#B] allow running a turtle program in some blank world, then get bounding box for all objects and move them into place
+* TODO [#B] display level number
+* TODO [#B] easily distinguishable objects that reflect size-increased bullets 
+* TODO [#B] boss with bullets that grow larger and faster as they approach you, but move in straight line
+* TODO [#C] :target tag causes onscreen highlight (i.e. bubble)
+* TODO [#C] freeze trail to create walls
+
+* DONE sticky bomb, delay/sound before firing ala howitzer
+  CLOSED: [2012-02-04 Sat 03:18]
+* DONE red shields in the doors of some bases to stop player just firing bomb from distance    
+  CLOSED: [2012-02-04 Sat 03:51]
+* DONE redzone warning sound
+  CLOSED: [2012-02-03 Fri 03:10]
+* DONE shield with limited use, only faces the dir you are shooting.
+  CLOSED: [2012-02-03 Fri 03:10]
+* DONE as in Xong---ONE hit kills
+  CLOSED: [2012-02-01 Wed 16:45]
+* DONE bases move around slowly like aircraft carriers
+  CLOSED: [2012-02-01 Wed 16:45]
+* DONE the trail is your shield. 
+  CLOSED: [2012-02-01 Wed 16:47]
+* DONE player bullets have limited range
+  CLOSED: [2012-02-01 Wed 20:36]
+* DONE "chips" are the XP and currency (you buy upgrades/items)
+  CLOSED: [2012-02-01 Wed 20:36]
+* DONE chips are left behind by enemies or found in crates
+  CLOSED: [2012-02-01 Wed 20:36]
+* DONE level completion when all targets/bases are destroyed
+  CLOSED: [2012-02-02 Thu 15:00]
+* DONE non-moving bases that spawn enemies
+  CLOSED: [2012-02-02 Thu 15:00]
+* DONE display word "WIN" or "LOES" 
+  CLOSED: [2012-02-02 Thu 09:19]
+* DONE energy meter
+  CLOSED: [2012-02-02 Thu 17:41]
+* DONE sweeping the trail across bouncing Chip particles is the only way to pick them up
+  CLOSED: [2012-02-01 Wed 20:36]
+
+
 * Design doc (outdated)
 
 MicroXONG is a retro-remake of [[http://dto.github.com/notebook/xong.html][XONG]] with graphics, sound, and controls
