@@ -526,63 +526,6 @@
 		      (+ (heading-to-player self) -1.5 (random 3.2))
 		      :timer 100)))))
 
-;;; A bomber
-
-(defresource 
-    (:name "rook" :type :image :file "rook.png")
-    (:name "rook2" :type :image :file "rook2.png"))
-
-(define-block rook 
-  :image "rook2" 
-  :hp 10
-  :tags '(:rook :enemy)
-  :timer 0
-  :fleeing nil)
-
-(define-method damage rook (points)
-  (decf %hp)
-  (play-sound self (random-choose *whack-sounds*))
-  (when (zerop %hp)
-    (make-explosion self 5)
-    (play-sound self "xplod")
-    (drop-chips self :value-multiplier 5)
-    (percent-of-time 40 (drop self (random-powerup)))
-    (destroy self)))
-
-(define-method fire rook (heading)
-  (drop self (new bomb heading :origin self)))
-
-(define-method update rook ()
-  (with-fields (timer) self
-    (when (plusp timer)
-      (decf timer))
-    (let ((dir (heading-to-player self))
-	  (dist (distance-to-player self)))
-      (cond 
-	;; shoot bomb then set flag to run away
-	((and (< dist 250) 
-	      (zerop timer))
-	 (fire self dir)
-	 (setf timer 130))
-	;; begin approach after staying still
-	((and (< dist 420) (zerop timer))
-	 (aim self dir)
-	 (move-forward self 2))
-	;; run away fast
-	((and (< dist 420) (plusp timer))
-	 (aim self (- dir pi))
-	 (percent-of-time 2 (drop self (new bullet (heading-to-player self))))
-	 (move-forward self 4))
-	;; otherwise do nothing
-	))))
-
-(define-method collide rook (thing)
-  (cond 
-    ((is-brick thing)
-     (restore-location self))
-    ((is-robot thing)
-     (damage thing 1))))
-
 ;;; Carriers
 
 (defresource (:name "carrier" :type :image :file "carrier.png"))
@@ -804,6 +747,65 @@
 	      (play-sample "countdown")
 	      (decf countdown)
 	      (setf image (nth countdown *bomb-images*)))))))
+
+;;; A bomber guy who shoots bombs at you
+
+(defresource 
+    (:name "rook" :type :image :file "rook.png")
+    (:name "rook2" :type :image :file "rook2.png"))
+
+(define-block rook 
+  :image "rook2" 
+  :hp 10
+  :tags '(:rook :enemy)
+  :timer 0
+  :fleeing nil)
+
+(define-method damage rook (points)
+  (decf %hp)
+  (play-sound self (random-choose *whack-sounds*))
+  (when (zerop %hp)
+    (make-explosion self 5)
+    (play-sound self "xplod")
+    (drop-chips self :value-multiplier 5)
+    (percent-of-time 40 (drop self (random-powerup)))
+    (destroy self)))
+
+(define-method fire rook (heading)
+  (drop self (new bomb heading :origin self)))
+
+(define-method update rook ()
+  (with-fields (timer) self
+    (when (plusp timer)
+      (decf timer))
+    (let ((dir (heading-to-player self))
+	  (dist (distance-to-player self)))
+      (cond 
+	;; shoot bomb then set flag to run away
+	((and (< dist 250) 
+	      (zerop timer))
+	 (fire self dir)
+	 (setf timer 130))
+	;; begin approach after staying still
+	((and (< dist 420) (zerop timer))
+	 (aim self dir)
+	 (move-forward self 2))
+	;; run away fast
+	((and (< dist 420) (plusp timer))
+	 (aim self (- dir pi))
+	 (percent-of-time 2 (drop self (new bullet (heading-to-player self))))
+	 (move-forward self 4))
+	;; otherwise do nothing
+	))))
+
+(define-method collide rook (thing)
+  (cond 
+    ((is-brick thing)
+     (restore-location self))
+    ((is-robot thing)
+     (damage thing 1))))
+
+;;; Powerup items
 
 (defun is-powerup (thing)
   (has-tag thing :powerup))
@@ -1202,8 +1204,8 @@
   (update%%world self)
   (unless %level-clear
     (let ((enemy-count 0))
-      (loop for sprite being the hash-keys in %sprites do
-	(when (is-enemy sprite)
+      (loop for object being the hash-keys in %objects do
+	(when (is-enemy object)
 	  (incf enemy-count)))
       (when (zerop enemy-count)
 	(setf %level-clear t)

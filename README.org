@@ -1,3 +1,15 @@
+<dto> im working on finally cracking my issues with level generation,
+      i.e. things colliding or being off the map 
+<dto> the solution has presented itself. i'm going to use my new quadtree code
+      to allow generating pieces of a level in a "void" and then generating a
+      bounding-box for them , i can process collisions at that point to make
+      sure the level is kosher before pasting it into a larger level in its
+      own area and then doing that for the other level pieces until you
+      calculate the bounding box for the whole level dynamically and then just
+      build a proper
+<dto> quadtree automatically. i can even detect areas of buildup and possibly
+      re-grid once or twice
+
 * Install 
 
 Requires Blocky: http://github.com/dto/blocky
@@ -50,15 +62,27 @@ dangerous in groups. They turn red when they're badly damaged.
 
 Much more to come...
 
-* TODO [#A] create a really proper level generation framework that auto-sizes things
+* Revise world gen stuff
+** DONE Let computed world size be what it is, then try to auto-fit quadtrees
+   CLOSED: [2012-02-05 Sun 04:10]
+*** DONE get rid of grid-height grid-width?? i think so
+    CLOSED: [2012-02-05 Sun 04:10]
+** TODO Worlds full of markers like "base marker" and "corridor", and those can recursively expand into objects and more markers
+** TODO algebra of worlds
+** TODO [#A] allow running a turtle program (or some arbitrary process) in some blank world, then get bounding box for all objects and move them into place
+** TODO allow dynamically adjusting quadtree to existing objects and detect clustering, ?
 ** TODO [#A] grammars to generate phrases which are then interpreted by (monadic?) turtles
-** TODO [#A] allow running a turtle program in some blank world, then get bounding box for all objects and move them into place
+** TODO [#A] create a really proper level generation framework that auto-sizes things
+** TODO only draw whats onscreen
+
+* Templates
 ** TODO archive: a few monitors in a very simple berzerky environment.
-** TODO open area with 1 or 2 small base rooms with spewing monitors and radiation hazard
-** TODO radiation vent chambers, simply subdivided, with guys who throw bombs at you
-** TODO multi-ring concentric squares base
+** TODO open area with 1 difficult base, spewing monitors and radiation hazard
+** TODO radiation vent chambers, floating hot clouds, simply subdivided, with guys who throw bombs at you
+** TODO multi-ring concentric squares megabase w interior turrets and gates you have to unlock
 ** TODO small rooms with item boxes so that often theres access to the bomb.
 ** TODO level divided into two unequal portions by a barrier with a gap, and moving enemies who spawn color creepers
+
 * TODO [#B] larger faster more menacing-sounding radiation creepers
 * TODO [#B] display level number
 * TODO [#B] easily distinguishable objects that reflect size-increased bullets 
@@ -66,6 +90,12 @@ Much more to come...
 * TODO [#C] :target tag causes onscreen highlight (i.e. bubble)
 * TODO [#C] freeze trail to create walls
 
+* TODO select adventure? and difficulty? tower of doom intv http://www.youtube.com/watch?v=XYELjUGArEA
+* TODO breaking shield pieces
+* TODO Story texts, places, "PROCEED TO DATA ARCHIVE 1365" or "REACTOR"
+* TODO occasional evil Dr. Niven voice
+* TODO DTOVISION PRESENTS.. XALCYONNNN
+* TODO map screen before each level with blinking indicator of where you are in the (branching) quest?
 
 * DONE sticky bomb, delay/sound before firing ala howitzer
   CLOSED: [2012-02-04 Sat 03:18]
