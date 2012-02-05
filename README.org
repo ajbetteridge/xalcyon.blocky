@@ -1,14 +1,3 @@
-<dto> im working on finally cracking my issues with level generation,
-      i.e. things colliding or being off the map 
-<dto> the solution has presented itself. i'm going to use my new quadtree code
-      to allow generating pieces of a level in a "void" and then generating a
-      bounding-box for them , i can process collisions at that point to make
-      sure the level is kosher before pasting it into a larger level in its
-      own area and then doing that for the other level pieces until you
-      calculate the bounding box for the whole level dynamically and then just
-      build a proper
-<dto> quadtree automatically. i can even detect areas of buildup and possibly
-      re-grid once or twice
 
 * Install 
 
@@ -63,10 +52,12 @@ dangerous in groups. They turn red when they're badly damaged.
 Much more to come...
 
 * Revise world gen stuff
-** DONE Let computed world size be what it is, then try to auto-fit quadtrees
-   CLOSED: [2012-02-05 Sun 04:10]
-*** DONE get rid of grid-height grid-width?? i think so
-    CLOSED: [2012-02-05 Sun 04:10]
+
+** TODO large seamless persistent worlds with lazy procedural generation
+** TODO Make a really giant quadtree with zillions of objects in it
+** TODO Choose any subtree as "active"
+** TODO Only compute/collide objects in active quadtree (i.e. load them into a world with that %quadtree)
+** TODO Restrict objects movement to active quadtree space
 ** TODO Worlds full of markers like "base marker" and "corridor", and those can recursively expand into objects and more markers
 ** TODO algebra of worlds
 ** TODO [#A] allow running a turtle program (or some arbitrary process) in some blank world, then get bounding box for all objects and move them into place
@@ -74,6 +65,23 @@ Much more to come...
 ** TODO [#A] grammars to generate phrases which are then interpreted by (monadic?) turtles
 ** TODO [#A] create a really proper level generation framework that auto-sizes things
 ** TODO only draw whats onscreen
+
+** DONE Let computed world size be what it is, then try to auto-fit quadtrees
+   CLOSED: [2012-02-05 Sun 04:10]
+*** DONE get rid of grid-height grid-width?? i think so
+    CLOSED: [2012-02-05 Sun 04:10]
+
+<dto> im working on finally cracking my issues with level generation,
+      i.e. things colliding or being off the map 
+<dto> the solution has presented itself. i'm going to use my new quadtree code
+      to allow generating pieces of a level in a "void" and then generating a
+      bounding-box for them , i can process collisions at that point to make
+      sure the level is kosher before pasting it into a larger level in its
+      own area and then doing that for the other level pieces until you
+      calculate the bounding box for the whole level dynamically and then just
+      build a proper
+<dto> quadtree automatically. i can even detect areas of buildup and possibly
+      re-grid once or twice
 
 * Templates
 ** TODO archive: a few monitors in a very simple berzerky environment.
