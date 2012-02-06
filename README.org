@@ -50,32 +50,29 @@ dangerous in groups. They turn red when they're badly damaged.
 
 Much more to come...
 
+
+*** TODO Restrict objects movement to active quadtree space
+* TODO combine turtle and world so that draw-room and stuff are direct members of "reactor" not reactor-turtle
+* TODO grammars 
 * Draft of level generator system
-
-* grammars to method invocations
+* grammars that boil down to simple lisp functions invoking methods etc
+* grammars-->worlds
 * algebra of worlds: merge, group-vertically, group-horizontally
-
-* Templates
-** TODO archive: a few monitors in a very simple berzerky environment.
-** TODO open area with 1 difficult base, spewing monitors and radiation hazard
-** TODO radiation vent chambers, floating hot clouds and jets, simply subdivided, with guys who throw bombs at you
-** TODO multi-ring concentric squares megabase w interior turrets and gates you have to unlock
-** TODO small rooms with item boxes so that often theres access to the bomb.
-** TODO level divided into two unequal portions by a barrier with a gap, and moving enemies who spawn color creepers
-
-* Revise world gen stuff
-
 ** TODO [#A] algebra of worlds--layout determined by computing leaf sizes and creating next level up in terms of that
 ** TODO world building routines that are parameterized with a bounding box or worldq
-** TODO [#A] allow running a turtle program (or some arbitrary process) in some blank world, then get bounding box for all objects and move them into place
-** TODO [#A] grammars to generate phrases which are then interpreted by (monadic?) turtles
+** TODO LEVEL TEMPLATES
+*** TODO archive: a few monitors in a very simple berzerky environment.
+*** TODO open area with 1 difficult base, spewing monitors and radiation hazard
+*** TODO radiation vent chambers, floating hot clouds and jets, simply subdivided, with guys who throw bombs at you
+*** TODO multi-ring concentric squares megabase w interior turrets and gates you have to unlock
+*** TODO small rooms with item boxes so that often theres access to the bomb.
+*** TODO level divided into two unequal portions by a barrier with a gap, and moving enemies who spawn color creepers
 ** TODO [#A] Worlds full of markers like "base marker" and "corridor", and those can recursively expand into objects and more markers
 ** TODO [#B] large seamless persistent worlds with lazy procedural generation
 *** TODO Make a really giant quadtree with zillions of objects in it
 *** TODO Choose any subtree as "active"
 *** TODO Only compute/collide objects in active quadtree (i.e. load them into a world with that %quadtree)
 *** TODO quadtrees do not need to be serialized (the object positions are retained for re-insertion, which is deterministic)
-*** TODO Restrict objects movement to active quadtree space
 ** TODO [#C] cache raw struct instead of uuid in #'add-block (instead of 't') --- and in quadtrees?
 ** TODO [#C] and in #objects?
 ** TODO [#C] only draw whats onscreen

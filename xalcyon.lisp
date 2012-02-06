@@ -1,4 +1,4 @@
-;;; xalcyon.lisp --- a multidirectional sci-fi shooter
+;;; xalcyon.lisp --- a multidirectional arcade shooter for dual analog sticks
 
 ;; Copyright (C) 2010, 2011, 2012  David O'Toole
 
@@ -119,6 +119,7 @@
 (defparameter *soundtrack* 
   (defresource 
     (:name "beatup" :type :music :file "beatup.ogg")
+    (:name "frantix2" :type :music :file "frantix2.ogg")
     (:name "xmrio" :type :music :file "xmrio.ogg")
     (:name "phong" :type :music :file "phong.ogg")
     (:name "remembering-xalcyon" :type :music :file "remembering-xalcyon.ogg")
@@ -137,7 +138,7 @@
   '((:dec :background "DarkSlateBlue" :brick "SlateBlue" :brick2 "hot pink" :wall "Black")
     (:tandy :background "black" :brick "red" :brick2 "gray40" :wall "gray20")
     (:vax :background "gray20" :brick "gray80" :brick2 "gray40" :wall "gray20")
-    (:command :background "DarkOrange" :brick "gold" :brick2 "gray40" :wall "gray20")
+;    (:command :background "DarkOrange" :brick "gold" :brick2 "gray40" :wall "gray20")
     (:maynard :background "black" :brick "DarkOrange" :brick2 "gray40" :wall "gray20")
     (:zerk :background "black" :brick "DeepSkyBlue" :brick2 "cyan" :wall "black")))
 
@@ -797,7 +798,7 @@
 	 (move-forward self 2))
 	;; run away fast
 	((and (< dist 420) (plusp timer))
-	 (aim self (- dir pi))
+	 (aim self (- dir pi 0.7))
 	 (percent-of-time 2 (drop self (new bullet (heading-to-player self))))
 	 (move-forward self 4))
 	;; otherwise do nothing
@@ -1103,77 +1104,81 @@
   (grid-width :initform 32)
   (grid-height :initform 32))
 
-(define-block reactor-turtle :image "robot" :x 10 :y 10)
+(define-turtle reactor-turtle)
 
 (define-method draw reactor-turtle ())
 
-(define-method draw-wall reactor-turtle (segments &optional (size 32))
-  (dotimes (n segments)
+(defparameter *wall-thickness* 16)
+
+(defun unit (&optional (units 1))
+  (* units *wall-thickness*))
+
+(define-method draw-wall reactor-turtle (length)
+  (dotimes (n length)
     (let ((brick (new brick)))
       (drop self brick)
-      (resize brick size size)
-      (move-forward self (+ size 0.01)))))
+      (resize brick *wall-thickness* *wall-thickness*)
+      (move-forward self (unit)))))
 
-(define-method draw-barrier reactor-turtle (segments &optional (size 32))
-  (move-forward self 0.1)
-  (dotimes (n segments)
+(define-method draw-barrier reactor-turtle (length)
+  (dotimes (n length)
     (let ((barrier (new barrier)))
       (drop self barrier)
-      (resize barrier (- size 1) (- size 1))
-      (move-forward self (+ size 0.01)))))
+      (resize barrier *wall-thickness* *wall-thickness*)
+      (move-forward self (unit)))))
 
-(define-method draw-square reactor-turtle (size &optional (segment-size 32))
+(define-method draw-square reactor-turtle (size)
   (dotimes (n 4)
-    (draw-wall self size segment-size)
-    (turn-right self 90)))
+    (draw-wall self size)
+    (turn-right self)
+    (move-forward self (unit))))
 
-(define-method skip-wall reactor-turtle (segments &optional (segment-size 32))
-  (move-forward self (+ 0.1 (* segment-size segments))))
+(define-method draw-base reactor-turtle (size0)
+  (let ((size (max 6 size0)))
+    (drop self (new base)
+	  (unit (+ 2 (random (- size 2))))
+	  (unit (+ 2 (random (- size 2)))))
+    (dotimes (n 4)
+      (let ((gap (1+ (random 2))))
+	(draw-wall self (- size gap))
+	(draw-barrier self 2)
+	(draw-wall self size)
+	(draw-barrier self (- size 1))
+	(move-forward self (unit))
+	(turn-right self)))))
 
-(define-method draw-room reactor-turtle (size &optional (segment-size 32))
-  (drop self (new base)
-	(+ 32 (random 64))
-	(+ 32 (random 64)))
-  (dotimes (n 4)
-    (let ((gap (1+ (random 2))))
-      (draw-wall self (- size gap) segment-size)
-      (draw-barrier self 2)
-      (draw-wall self size segment-size)
-      (draw-barrier self (- size 1) segment-size)
-      (skip-wall self 1 segment-size)
-      (turn-right self 90))))
+(define-method draw-room reactor-turtle (size0)
+  (let ((size (max 4 size0)))
+    (dotimes (n 4)
+      (let ((gap (1+ (random 2))))
+	(draw-wall self (- size gap))
+	(draw-barrier self 4)
+	(draw-wall self size)
+	(move-forward self (unit 2))
+	(draw-barrier self (- size 1))
+	(move-forward self (unit))
+	(turn-right self)))))
 
-(define-method draw-base reactor-turtle ()
-  (setf %heading 0)
-  (draw-room self (+ 5 (random 5)) (+ 5 (random 5)))
-  (skip-wall self 8))
-    
 (define-method run reactor-turtle ()
-  (draw-square self 31)
-  (move-to self (random-choose '(200 400 600)) 190)
-  (draw-base self)
-;  (drop self (new rook))
-  (move-to self (random-choose '(200 400 600)) 590)
-  (move-to self (random-choose '(200 400 600)) 730)
-  (draw-base self)
-  (drop self (new rook))
-  (percent-of-time 50
-    (percent-of-time 70 (skip-wall self (random-choose '(1 2))))
-    (move-to self (random-choose '(30 60 80)) (random-choose '(520 560 620)))
-    (draw-wall self (random-choose '(20 30)) 16)
-    (percent-of-time 70 (skip-wall self (random-choose '(1 2 3 4))))
-    (draw-wall self (random-choose '(15 10)) 16)))
+  (move-to self 200 200)
+  (draw-room self (+ 4 (random 10))))
+
+  ;; (percent-of-time 50
+  ;;   (percent-of-time 70 (skip-wall self (random-choose '(1 2))))
+  ;;   (move-to self (random-choose '(30 60 80)) (random-choose '(520 560 620)))
+  ;;   (draw-wall self (random-choose '(20 30)) 16)
+  ;;   (percent-of-time 70 (skip-wall self (random-choose '(1 2 3 4))))
+  ;;   (draw-wall self (random-choose '(15 10)) 16)))
 
 (define-method build reactor (level)
   (setf *theme* (random-theme))
   (setf %window-scrolling-speed 6)
-  (let ((*quadtree* %quadtree))
-    (with-fields (grid-width grid-height) self
-      (move-window-to self 0 0)
-      (let ((turtle (new reactor-turtle)))
-      	(drop self turtle)
-      	(run turtle)
-      	(destroy turtle)))))
+  (move-window-to self 0 0)
+  (paste self 
+	 (stack-vertically 
+	  (make-world (new reactor-turtle))
+	  (make-world (new reactor-turtle))))
+  (shrink-wrap self))
 
 (define-method draw reactor ()
   (draw%%world self)
@@ -1220,7 +1225,7 @@
 (defun xalcyon ()
   (let ((robot (new robot))
 	(reactor (new reactor)))
-    (play-music (random-choose *soundtrack*) :loop t)
+;    (play-music (random-choose *soundtrack*) :loop t)
     (set-location robot 60 60)
     (bind-event reactor '(:escape) :reset)
     (new universe 
