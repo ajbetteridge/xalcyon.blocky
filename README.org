@@ -2,8 +2,8 @@
 
 Requires Blocky: http://github.com/dto/blocky
 
-Please see the INSTALL file, and also "blocky-init.lisp" for
-instructions on how to configure the joystick.
+Please see the [[https://github.com/dto/blocky/blob/master/INSTALL][installation instructions]] for Blocky, and also
+[[https://github.com/dto/blocky/blob/master/blocky-init.lisp][blocky-init.lisp]] for info on how to configure the joystick.
 
 * About 
 
@@ -66,6 +66,7 @@ Much more to come...
 * Revise world gen stuff
 
 ** TODO [#A] algebra of worlds--layout determined by computing leaf sizes and creating next level up in terms of that
+** TODO world building routines that are parameterized with a bounding box or worldq
 ** TODO [#A] allow running a turtle program (or some arbitrary process) in some blank world, then get bounding box for all objects and move them into place
 ** TODO [#A] grammars to generate phrases which are then interpreted by (monadic?) turtles
 ** TODO [#A] Worlds full of markers like "base marker" and "corridor", and those can recursively expand into objects and more markers
