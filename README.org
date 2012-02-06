@@ -1,4 +1,3 @@
-
 * Install 
 
 Requires Blocky: http://github.com/dto/blocky
@@ -51,10 +50,15 @@ dangerous in groups. They turn red when they're badly damaged.
 
 Much more to come...
 
+* Draft of level generator system
+
+* grammars to method invocations
+* algebra of worlds: merge, group-vertically, group-horizontally
+
 * Templates
 ** TODO archive: a few monitors in a very simple berzerky environment.
 ** TODO open area with 1 difficult base, spewing monitors and radiation hazard
-** TODO radiation vent chambers, floating hot clouds, simply subdivided, with guys who throw bombs at you
+** TODO radiation vent chambers, floating hot clouds and jets, simply subdivided, with guys who throw bombs at you
 ** TODO multi-ring concentric squares megabase w interior turrets and gates you have to unlock
 ** TODO small rooms with item boxes so that often theres access to the bomb.
 ** TODO level divided into two unequal portions by a barrier with a gap, and moving enemies who spawn color creepers
@@ -94,6 +98,14 @@ Much more to come...
 * TODO occasional evil Dr. Niven voice
 * TODO DTOVISION PRESENTS.. XALCYONNNN
 
+* TODO map screen before each level with blinking indicator of where you are in the (branching) quest?
+
+** DONE Let computed world size be what it is, then try to auto-fit quadtrees
+   CLOSED: [2012-02-05 Sun 04:10]
+*** DONE get rid of grid-height grid-width?? i think so
+    CLOSED: [2012-02-05 Sun 04:10]
+
+  CLOSED: [2012-02-04 Sat 03:18]
 * Level gen Notes
 
 <dto> im working on finally cracking my issues with level generation,
@@ -110,14 +122,6 @@ Much more to come...
 
 
 * DONE sticky bomb, delay/sound before firing ala howitzer
-* TODO map screen before each level with blinking indicator of where you are in the (branching) quest?
-
-** DONE Let computed world size be what it is, then try to auto-fit quadtrees
-   CLOSED: [2012-02-05 Sun 04:10]
-*** DONE get rid of grid-height grid-width?? i think so
-    CLOSED: [2012-02-05 Sun 04:10]
-
-  CLOSED: [2012-02-04 Sat 03:18]
 * DONE red shields in the doors of some bases to stop player just firing bomb from distance    
   CLOSED: [2012-02-04 Sat 03:51]
 * DONE redzone warning sound
