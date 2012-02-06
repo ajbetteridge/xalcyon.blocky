@@ -27,11 +27,13 @@
 
 (defvar *level* 1)
 
-(setf *screen-width* 800)
-(setf *screen-height* 600)
+(setf *screen-width* 840)
+(setf *screen-height* 540)
+(setf *nominal-screen-width* 840)
+(setf *nominal-screen-height* 540)
 (setf *window-title* "Xalcyon")
 (setf *use-antialiased-text* nil)
-(setf *scale-output-to-window* nil)
+(setf *scale-output-to-window* t)
 (setf *frame-rate* 30)
 
 (defvar *xalcyon-font* "sans-mono-bold-16") 
@@ -116,13 +118,13 @@
  
 (defparameter *soundtrack* 
   (defresource 
-;    (:name "beatup" :type :music :file "beatup.ogg")
+    (:name "beatup" :type :music :file "beatup.ogg")
     (:name "xmrio" :type :music :file "xmrio.ogg")
     (:name "phong" :type :music :file "phong.ogg")
     (:name "remembering-xalcyon" :type :music :file "remembering-xalcyon.ogg")
-;    (:name "defmacron" :type :music :file "defmacron.ogg")
-    (:name "ompula" :type :music :file "ompula.ogg")))
-;    (:name "wraparound" :type :music :file "wraparound.ogg" :properties (:volume 200))
+    (:name "defmacron" :type :music :file "defmacron.ogg")
+    (:name "ompula" :type :music :file "ompula.ogg")
+    (:name "wraparound" :type :music :file "wraparound.ogg" :properties (:volume 200))))
 ;    (:name "xalcyon" :type :music :file "xalcyon.ogg")))
 
 (defresource 
@@ -418,7 +420,7 @@
   (when (< (distance-to-player self) 460)
     (percent-of-time 2 
       (play-sound self "munch1")
-      (let ((size (min 220 (* %height 1.2))))
+      (let ((size (* %height 1.3)))
 	(resize self size size))
       (incf %speed 0.3))))
 
@@ -676,7 +678,7 @@
 (define-method collide explosion (thing)
   (when (is-brick thing) 
     (restore-location self))
-  (damage thing 0.5))
+  (damage thing 1))
 
 (defun make-explosion (thing &optional (size 8))
   (dotimes (n size)
@@ -711,6 +713,9 @@
 
 (define-method collide bomb (thing)
   (cond 
+    ;; player bullets destroy bombs
+    ((is-player-bullet thing)
+     (explode self))
     ;; bombs should not stick to who fired them
     ((and %origin 
 	  (is-enemy %origin)
@@ -1215,7 +1220,7 @@
 (defun xalcyon ()
   (let ((robot (new robot))
 	(reactor (new reactor)))
-;    (play-music (random-choose *soundtrack*) :loop t)
+    (play-music (random-choose *soundtrack*) :loop t)
     (set-location robot 60 60)
     (bind-event reactor '(:escape) :reset)
     (new universe 
