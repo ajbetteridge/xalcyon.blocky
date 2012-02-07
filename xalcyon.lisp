@@ -180,12 +180,12 @@
 (define-method draw brick ()
   (draw-box %x %y %width %height :color (theme-color %part)))
 
-(define-method collide brick (thing)
-  (when (is-brick thing)
-    (message "brick collision ~S" (gensym))))
+;; (define-method collide brick (thing)
+;;   (when (is-brick thing)
+;;     (message "brick collision ~S" (gensym))))
 
 ;;; Breakable block barriers that pass enemies and enemy bullets but
-;;; not player bullets
+;;; not player bullets or the player
 
 (defun is-barrier (thing)
   (has-tag thing :barrier))
@@ -212,7 +212,7 @@
   (decf %hp points)
   (make-sparks %x %y 1)
   (play-sample "shield-bounce")
-  (when (zerop %hp)
+  (when (not (plusp %hp))
 ;    (make-sparks %x %y)
     (destroy self)))
 
@@ -688,12 +688,13 @@
 (define-method collide explosion (thing)
   (when (is-brick thing) 
     (restore-location self))
-  (damage thing 2))
+  (unless (is-rook thing)
+    (damage thing 2)))
 
 (defun make-explosion (thing &optional (size 8))
   (multiple-value-bind (x y) (center-point thing)
     (dotimes (n size)
-      (add-block (world) x y))))
+      (add-block (world) (new explosion) x y))))
   
 (defresource
     (:name "mine" :type :image :file "bomb.png")
@@ -770,6 +771,9 @@
     (:name "rook" :type :image :file "rook.png")
     (:name "rook2" :type :image :file "rook2.png"))
 
+(defun is-rook (thing)
+  (has-tag thing :rook))
+
 (define-block rook 
   :image "rook2" 
   :hp 10
@@ -800,24 +804,27 @@
 	;; shoot bomb then set flag to run away
 	((and (< dist 250) 
 	      (zerop timer))
-	 (fire self dir)
-	 (setf timer 130))
+	 ;; don't always fire
+	 (percent-of-time 65 (fire self dir))
+	 (aim self (- dir 0.52))
+	 (setf timer 90))
 	;; begin approach after staying still
 	((and (< dist 420) (zerop timer))
 	 (aim self dir)
 	 (move-forward self 2))
 	;; run away fast
 	((and (< dist 420) (plusp timer))
-	 (aim self (- dir pi 0.7))
+	 (aim self (- %heading 0.03))
 	 (percent-of-time 2 (drop self (new bullet (heading-to-player self))))
-	 (move-forward self 4))
+	 (move-forward self 3))
 	;; otherwise do nothing
 	))))
 
 (define-method collide rook (thing)
   (cond 
-    ((is-brick thing)
-     (restore-location self))
+    ((or (is-brick thing) (is-enemy thing))
+     (restore-location self)
+     (setf %timer 40))
     ((is-robot thing)
      (damage thing 1))))
 
@@ -1027,7 +1034,7 @@
   (let ((sign (new win)))
     (drop self sign 32 32)
     (center sign)
-    (later 3.5 (destroy sign))))
+    (later 5 (destroy sign))))
 
 (define-method collide robot (thing)
   (cond
@@ -1056,7 +1063,7 @@
     (with-fields (dead recharge-timer) self
       (when (zerop recharge-timer)
 	(setf recharge-timer 10)
-	(recharge self 2))
+	(recharge self 3))
       (decf recharge-timer))))
 
 (define-method update robot ()
@@ -1088,7 +1095,7 @@
 (define-block base :image "base" :ready nil :timer 70 :tags '(:enemy) :hp 15)
 
 (define-method update base ()
-  (when (< (distance-to-player self) 290)
+  (when (< (distance-to-player self) 320)
     (decf %timer)
     (when (zerop %timer)
       (setf %timer 100)
@@ -1118,7 +1125,7 @@
   (enemy-count :initform nil)
   (background-color :initform (theme-color :background)))
 
-(defparameter *wall-thickness* 16)
+(defparameter *wall-thickness* 20)
 
 (defun unit (&optional (units 1))
   (* units *wall-thickness*))
@@ -1156,6 +1163,20 @@
 	(draw-wall self 2)
 	(turn-right self)))))
 
+(define-method draw-bunker reactor (size0 &optional (monitors 2))
+  (let ((size (+ 6 size0)))
+    (let ((gap (+ 3 (random 2))))
+      (dotimes (n 4)
+	(draw-wall self (- size gap 2))
+	(move-forward self (unit gap))
+	(draw-wall self 2)
+	(draw-wall self 2)
+	(turn-right self))
+      (dotimes (n monitors)
+	(drop self (new monitor) 
+	      (unit (+ 2 (random size0)))
+	      (unit (+ 2 (random size0))))))))
+
 (define-method draw-solid-room reactor (width height)
   (draw-wall self width)
   (turn-right self)
@@ -1179,15 +1200,54 @@
 (define-method build reactor (&optional (level 1))
   (setf *theme* (random-theme))
   (setf %background-color (theme-color :background))
-  (setf %window-scrolling-speed 6)
+  (setf %window-scrolling-speed 5)
   (move-window-to self 0 0)
   (paste self 
 	 (with-world-prototype self
 	   (wall-around 
 	    (border-around
-	     (with-new-world (draw-base self (+ 2 (random 3))))
+	      (with-new-world (draw-base (world) (+ 2 (random 3))))
 	     200))))
   (shrink-wrap self))
+
+(define-method build-archive reactor ()
+  (setf *theme* (random-theme))
+  (setf %background-color (theme-color :background))
+  (setf %window-scrolling-speed 5)
+  (move-window-to self 0 0)
+  (paste self 
+	 (with-world-prototype self
+	   (wall-around 
+	    (border-around
+	     (stack-horizontally 
+	      (border-around
+	       (with-new-world (draw-bunker (world) (+ 7 (random 4))))
+	       100)
+	      (border-around
+	       (with-new-world (draw-bunker (world) (+ 7 (random 4))))
+	       100))
+	     150))))
+  (shrink-wrap self))
+
+(define-method build-bombers reactor ()
+  (setf *theme* (random-theme))
+  (setf %background-color (theme-color :background))
+  (setf %window-scrolling-speed 5)
+  (move-window-to self 0 0)
+  (paste self 
+	 (with-world-prototype self
+	   (wall-around 
+	    (border-around
+	     (combine
+	      (with-new-world (draw-bunker (world) (+ 10 (random 6))))
+	      (border-around 
+	       (with-new-world (dotimes (n 3)
+				 (drop (world) (new rook) 
+				       (random (* 2 (unit 5)))
+				       (random (* 2 (unit 5))))))))
+	      200))))
+  (shrink-wrap self))
+  
 
 ;; 	 (with-world-prototype self
 ;; 	   (wall-around 
@@ -1249,7 +1309,10 @@
 ;    (play-music (random-choose *soundtrack*) :loop t)
     (set-location robot 60 60)
     (bind-event reactor '(:escape) :reset)
-    (build reactor)
+    (ecase (random 3)
+      (0 (build-bombers reactor))
+      (1 (build-archive reactor))
+      (2 (build reactor)))
     (new universe 
 	 :player robot
 	 :world reactor)))
