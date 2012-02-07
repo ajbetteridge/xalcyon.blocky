@@ -33,7 +33,7 @@
 (setf *nominal-screen-height* 540)
 (setf *window-title* "Xalcyon")
 (setf *use-antialiased-text* nil)
-(setf *scale-output-to-window* t)
+(setf *scale-output-to-window* nil)
 (setf *frame-rate* 30)
 
 (defvar *xalcyon-font* "sans-mono-bold-16") 
@@ -1096,44 +1096,37 @@
 
 ;;; The reactor
 
+
 (define-world reactor
-  level-clear
-  (enemy-count :initform nil)
-  (background-color :initform (theme-color :background))
-  (grid-size :initform 32)
-  (grid-width :initform 32)
-  (grid-height :initform 32))
-
-(define-turtle reactor-turtle)
-
-(define-method draw reactor-turtle ())
+  (level-clear :initform nil)
+  (enemy-count :initform nil))
+ ; (background-color :initform (theme-color :background)))
 
 (defparameter *wall-thickness* 16)
 
 (defun unit (&optional (units 1))
   (* units *wall-thickness*))
 
-(define-method draw-wall reactor-turtle (length)
+(define-method draw-wall reactor (length)
   (dotimes (n length)
     (let ((brick (new brick)))
       (drop self brick)
       (resize brick *wall-thickness* *wall-thickness*)
       (move-forward self (unit)))))
 
-(define-method draw-barrier reactor-turtle (length)
+(define-method draw-barrier reactor (length)
   (dotimes (n length)
     (let ((barrier (new barrier)))
       (drop self barrier)
       (resize barrier *wall-thickness* *wall-thickness*)
       (move-forward self (unit)))))
 
-(define-method draw-square reactor-turtle (size)
+(define-method draw-square reactor (size)
   (dotimes (n 4)
     (draw-wall self size)
-    (turn-right self)
-    (move-forward self (unit))))
+    (turn-right self)))
 
-(define-method draw-base reactor-turtle (size0)
+(define-method draw-base reactor (size0)
   (let ((size (max 6 size0)))
     (drop self (new base)
 	  (unit (+ 2 (random (- size 2))))
@@ -1144,42 +1137,70 @@
 	(draw-barrier self 2)
 	(draw-wall self size)
 	(draw-barrier self (- size 1))
-	(move-forward self (unit))
 	(turn-right self)))))
 
-(define-method draw-room reactor-turtle (size0)
+(define-method draw-room reactor (size0)
   (let ((size (max 4 size0)))
     (dotimes (n 4)
-      (let ((gap (1+ (random 2))))
+      (let ((gap (1+ (random 3))))
 	(draw-wall self (- size gap))
 	(draw-barrier self 4)
 	(draw-wall self size)
 	(move-forward self (unit 2))
 	(draw-barrier self (- size 1))
-	(move-forward self (unit))
 	(turn-right self)))))
 
-(define-method run reactor-turtle ()
-  (move-to self 200 200)
-  (draw-room self (+ 4 (random 10))))
+(define-method draw-solid-room reactor (width height)
+  (draw-wall self width)
+  (turn-right self)
+  (draw-wall self height)
+  (turn-right self)
+  (draw-wall self width)
+  (turn-right self)
+  (draw-wall self height)
+  (turn-right self))
 
-  ;; (percent-of-time 50
-  ;;   (percent-of-time 70 (skip-wall self (random-choose '(1 2))))
-  ;;   (move-to self (random-choose '(30 60 80)) (random-choose '(520 560 620)))
-  ;;   (draw-wall self (random-choose '(20 30)) 16)
-  ;;   (percent-of-time 70 (skip-wall self (random-choose '(1 2 3 4))))
-  ;;   (draw-wall self (random-choose '(15 10)) 16)))
+(defun wall-around (world)
+  (with-fields (height width) world
+    (let ((unit (unit)))
+    (with-new-world 
+      (paste (world) world unit unit)
+      (draw-solid-room (world) 
+		       (truncate (/ width unit))
+		       (truncate (/ height unit)))))))
 
-(define-method build reactor (level)
+(define-method build reactor (&optional (level 1))
   (setf *theme* (random-theme))
   (setf %window-scrolling-speed 6)
   (move-window-to self 0 0)
   (paste self 
-	 (stack-vertically 
-	  (make-world (new reactor-turtle))
-	  (make-world (new reactor-turtle))))
-  (shrink-wrap self))
-
+	 (with-world-prototype self
+	   (wall-around 
+	    (shrink-wrap 
+	       (stack-vertically 
+		(stack-horizontally
+		 (with-new-world 
+		   (draw-room (world) (+ 4 (random 3))))
+		 (scale 
+		  (with-new-world 
+		    (draw-room (world) (+ 2 (random 3))))
+		  0.5)
+		 (scale 
+		  (with-new-world 
+		    (draw-room (world) (+ 2 (random 3))))
+		  2)
+		 (stack-horizontally
+		  (with-new-world 
+		    (draw-room (world) (+ 2 (random 3))))
+		  (scale 
+		   (with-new-world 
+		     (draw-room (world) (+ 4 (random 3))))
+		   0.5)
+		  (scale 
+		   (with-new-world 
+		     (draw-room (world) (+ 4 (random 3))))
+		   3)))))))))
+	       	     
 (define-method draw reactor ()
   (draw%%world self)
   ;; heads up display
@@ -1228,11 +1249,10 @@
 ;    (play-music (random-choose *soundtrack*) :loop t)
     (set-location robot 60 60)
     (bind-event reactor '(:escape) :reset)
+    (build reactor)
     (new universe 
 	 :player robot
-	 :world reactor)
-    (build reactor 1)))
-
+	 :world reactor)))
 
 (define-method reset reactor ()
   (xalcyon))
