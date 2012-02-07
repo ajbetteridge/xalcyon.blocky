@@ -33,7 +33,7 @@
 (setf *nominal-screen-height* 540)
 (setf *window-title* "Xalcyon")
 (setf *use-antialiased-text* nil)
-(setf *scale-output-to-window* nil)
+(setf *scale-output-to-window* t)
 (setf *frame-rate* 30)
 
 (defvar *xalcyon-font* "sans-mono-bold-16") 
@@ -140,7 +140,7 @@
     (:vax :background "gray20" :brick "gray80" :brick2 "gray40" :wall "gray20")
 ;    (:command :background "DarkOrange" :brick "gold" :brick2 "gray40" :wall "gray20")
     (:maynard :background "black" :brick "DarkOrange" :brick2 "gray40" :wall "gray20")
-    (:zerk :background "black" :brick "DeepSkyBlue" :brick2 "cyan" :wall "black")))
+    (:zerk :background "black" :brick "maroon2" :brick2 "cyan" :wall "black")))
 
 (defun random-theme () (random-choose (mapcar #'car *themes*)))
 
@@ -186,15 +186,17 @@
 (defun is-barrier (thing)
   (has-tag thing :barrier))
 
+(defparameter *barrier-hp* 12)
+
 (define-block barrier 
-  :hp 12
+  :hp *barrier-hp*
   :color "magenta"
   :tags '(:barrier))
 
 (define-method draw barrier ()
   (percent-of-time 15 (setf %color (random-choose '("cyan" "DeepSkyBlue"))))
   (with-field-values (x y width height hp) self
-    (let ((edge (- 12 hp)))
+    (let ((edge (max 0 (* 0.5 (- width (* width (/ hp *barrier-hp*)))))))
       (draw-box x y width height :color "magenta")
       (draw-box (+ x edge) (+ y edge)
 		(- width (* edge 2))
@@ -361,6 +363,9 @@
   (when speed (setf %speed speed))
   (when timer (setf %timer timer))
   (when radius (setf %radius radius))
+  (setf %height 
+	(setf %width
+	      (* 1.8 %radius)))
   (when tags
     (dolist (tag tags)
       (add-tag self tag))))
@@ -679,7 +684,7 @@
 (define-method collide explosion (thing)
   (when (is-brick thing) 
     (restore-location self))
-  (damage thing 1))
+  (damage thing 2))
 
 (defun make-explosion (thing &optional (size 8))
   (dotimes (n size)
@@ -944,7 +949,7 @@
 (define-method throw-bomb robot ()
   (when (and %bomb-loaded 
 	     (> %energy 40))
-    (charge self 40)
+    (charge self 30)
     (play-sample "bombs-away")
     (drop self (new bomb %heading))
     (setf %bomb-loaded nil)))
@@ -991,7 +996,7 @@
   (when (and %ready 
 	     (not %dead) 
 	     (> %energy 2))
-    (charge self 2)
+    (charge self 1.2)
     (setf %ready nil)
     (later 8 (reload self))
     (play-sound self "zap")
@@ -1132,22 +1137,22 @@
 	  (unit (+ 2 (random (- size 2))))
 	  (unit (+ 2 (random (- size 2)))))
     (dotimes (n 4)
-      (let ((gap (1+ (random 2))))
-	(draw-wall self (- size gap))
+      (let ((gap (+ 2 (random 2))))
+	(draw-wall self (- size gap 2))
 	(draw-barrier self 2)
 	(draw-wall self size)
-	(draw-barrier self (- size 1))
+	(draw-barrier self 3)
 	(turn-right self)))))
 
 (define-method draw-room reactor (size0)
   (let ((size (max 4 size0)))
     (dotimes (n 4)
-      (let ((gap (1+ (random 3))))
+      (let ((gap (1+ (random 4))))
 	(draw-wall self (- size gap))
-	(draw-barrier self 4)
+	(draw-barrier self gap)
 	(draw-wall self size)
 	(move-forward self (unit 2))
-	(draw-barrier self (- size 1))
+	(draw-barrier self (- gap 1))
 	(turn-right self)))))
 
 (define-method draw-solid-room reactor (width height)
@@ -1163,43 +1168,95 @@
 (defun wall-around (world)
   (with-fields (height width) world
     (let ((unit (unit)))
-    (with-new-world 
-      (paste (world) world unit unit)
-      (draw-solid-room (world) 
-		       (truncate (/ width unit))
-		       (truncate (/ height unit)))))))
+      (border-around
+       (with-new-world 
+	 (paste (world) world unit unit)
+	 (draw-solid-room (world) 
+			  (truncate (/ width unit))
+			  (truncate (/ height unit))))))))
 
 (define-method build reactor (&optional (level 1))
   (setf *theme* (random-theme))
   (setf %window-scrolling-speed 6)
   (move-window-to self 0 0)
   (paste self 
-	 (with-world-prototype self
-	   (wall-around 
-	    (shrink-wrap 
-	       (stack-vertically 
-		(stack-horizontally
-		 (with-new-world 
-		   (draw-room (world) (+ 4 (random 3))))
-		 (scale 
-		  (with-new-world 
-		    (draw-room (world) (+ 2 (random 3))))
-		  0.5)
-		 (scale 
-		  (with-new-world 
-		    (draw-room (world) (+ 2 (random 3))))
-		  2)
-		 (stack-horizontally
-		  (with-new-world 
-		    (draw-room (world) (+ 2 (random 3))))
-		  (scale 
-		   (with-new-world 
-		     (draw-room (world) (+ 4 (random 3))))
-		   0.5)
-		  (scale 
-		   (with-new-world 
-		     (draw-room (world) (+ 4 (random 3))))
-		   3)))))))))
+	 (shrink-wrap
+	  (with-world-prototype self
+	    (wall-around 
+	     (border-around
+	      (with-new-world (draw-base self (+ 2 (random 8)))) 
+	      200)))))
+  (shrink-wrap self))
+
+
+  ;; 	 (shrink-wrap
+  ;; 	  (with-world-prototype self
+  ;; 	    (wall-around 
+  ;; 	     (border-around
+  ;; 	      (stack-horizontally 
+  ;; 	       (border-around (with-new-world (draw-room self (+ 5 (random 8)))) 100)
+  ;; 	       (border-around (with-new-world (draw-base self (+ 2 (random 8)))) 80))
+  ;; 	      200)))))
+  ;; (shrink-wrap self))
+
+
+
+;; (bounding-box (world))
+
+  ;; 	 (with-world-prototype self
+  ;; 	   (wall-around 
+  ;; 	    (border-around
+  ;; 	     (combine 
+  ;; 	      (with-new-world (draw-room self (+ 20 (random 8))))
+  ;; 	      (translate (with-new-world (draw-base self (+ 2 (random 8))))
+  ;; 			 (unit (+ 10 (random 3))) (unit (+ 5 (random 4)))))
+  ;; 	     (+ 100 (random 60))))))
+  ;; (shrink-wrap self))
+  
+	     ;; (stack-vertically
+	     ;;  (border-around
+	     ;;   (stack-horizontally 
+	     ;; 	(border-around
+	     ;; 	 (with-new-world
+	     ;; 	   (draw-base (world) (+ 4 (random 4)))) 
+	     ;; 	 (+ 20 (random 35)))
+	     ;; 	(border-around
+	     ;; 	 (with-new-world
+	     ;; 	   (draw-base (world) (+ 4 (random 4))))
+	     ;; 	 (+ 16 (random 18)))))
+	     ;;  (border-around
+	     ;;   (stack-horizontally 
+	     ;; 	(border-around
+	     ;; 	 (with-new-world
+	     ;; 	   (draw-base (world) (+ 4 (random 4)))))
+	     ;; 	(border-around
+	     ;; 	 (with-new-world
+	     ;; 	   (draw-base (world) (+ 4 (random 4))))))))))))
+
+	    ;; (shrink-wrap 
+	    ;;    (stack-vertically 
+	    ;; 	(stack-horizontally
+	    ;; 	 (with-new-world 
+	    ;; 	   (draw-room (world) (+ 4 (random 3))))
+	    ;; 	 (scale 
+	    ;; 	  (with-new-world 
+	    ;; 	    (draw-room (world) (+ 2 (random 3))))
+	    ;; 	  0.5)
+	    ;; 	 (scale 
+	    ;; 	  (with-new-world 
+	    ;; 	    (draw-room (world) (+ 2 (random 3))))
+	    ;; 	  2)
+	    ;; 	 (stack-horizontally
+	    ;; 	  (with-new-world 
+	    ;; 	    (draw-room (world) (+ 2 (random 3))))
+	    ;; 	  (scale 
+	    ;; 	   (with-new-world 
+	    ;; 	     (draw-room (world) (+ 4 (random 3))))
+	    ;; 	   0.5)
+	    ;; 	  (scale 
+	    ;; 	   (with-new-world 
+	    ;; 	     (draw-room (world) (+ 4 (random 3))))
+	    ;; 	   3)))))))))
 	       	     
 (define-method draw reactor ()
   (draw%%world self)

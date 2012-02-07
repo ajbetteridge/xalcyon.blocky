@@ -50,15 +50,13 @@ dangerous in groups. They turn red when they're badly damaged.
 
 Much more to come...
 
-
-*** TODO Restrict objects movement to active quadtree space
-* TODO combine turtle and world so that draw-room and stuff are direct members of "reactor" not reactor-turtle
-* TODO grammars 
-* Draft of level generator system
-* grammars that boil down to simple lisp functions invoking methods etc
-* grammars-->worlds
-* algebra of worlds: merge, group-vertically, group-horizontally
-** TODO [#A] algebra of worlds--layout determined by computing leaf sizes and creating next level up in terms of that
+** TODO fix horz/vert extent calculations by updating bounding box after all opsa3
+** TODO groovy video w new musics
+** DONE border around world
+   CLOSED: [2012-02-06 Mon 20:49]
+** TODO destroy-region, select-region, get-region-objects
+** TODO Restrict objects movement to active quadtree space
+** TODO grammars that boil down to simple lisp functions invoking methods for making worlds etc
 ** TODO world building routines that are parameterized with a bounding box or worldq
 ** TODO LEVEL TEMPLATES
 *** TODO archive: a few monitors in a very simple berzerky environment.
@@ -78,11 +76,6 @@ Much more to come...
 ** TODO [#C] only draw whats onscreen
 ** TODO [#B] rename defresource to define-resource for consistency, and make it more useful (auto-type-detect naming, plus animation)
 ** TODO [#B] recharge time penalty if you run out the meter
-
-** DONE allow dynamically adjusting quadtree to existing objects and detect clustering, ?
-   CLOSED: [2012-02-05 Sun 19:30]
-** DONE fix world borders not colliding properly
-   CLOSED: [2012-02-05 Sun 19:29]
 * TODO [#B] larger faster more menacing-sounding radiation creepers
 * TODO [#B] display level number
 * TODO [#B] easily distinguishable objects that reflect size-increased bullets 
@@ -95,9 +88,18 @@ Much more to come...
 * TODO Story texts, places, "PROCEED TO DATA ARCHIVE 1365" or "REACTOR"
 * TODO occasional evil Dr. Niven voice
 * TODO DTOVISION PRESENTS.. XALCYONNNN
-
 * TODO map screen before each level with blinking indicator of where you are in the (branching) quest?
 
+** DONE allow dynamically adjusting quadtree to existing objects and detect clustering, ?
+   CLOSED: [2012-02-05 Sun 19:30]
+** DONE fix world borders not colliding properly
+   CLOSED: [2012-02-05 Sun 19:29]
+* DONE combine turtle and world so that draw-room and stuff are direct members of "reactor" not reactor-turtle
+  CLOSED: [2012-02-06 Mon 19:59]
+* DONE algebra of worlds: merge, group-vertically, group-horizontally
+  CLOSED: [2012-02-06 Mon 19:59]
+** DONE [#A] layout determined by computing leaf sizes and creating next level up in terms of that
+   CLOSED: [2012-02-06 Mon 20:00]
 ** DONE Let computed world size be what it is, then try to auto-fit quadtrees
    CLOSED: [2012-02-05 Sun 04:10]
 *** DONE get rid of grid-height grid-width?? i think so
