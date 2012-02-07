@@ -136,10 +136,10 @@
 
 (defparameter *themes* 
   '((:dec :background "DarkSlateBlue" :brick "SlateBlue" :brick2 "hot pink" :wall "Black")
-    (:tandy :background "black" :brick "red" :brick2 "gray40" :wall "gray20")
-    (:vax :background "gray20" :brick "gray80" :brick2 "gray40" :wall "gray20")
+    (:tandy :background "gray20" :brick "red" :brick2 "gray30" :wall "gray20")
+    (:vax :background "gray20" :brick "gray50" :brick2 "gray30" :wall "gray20")
 ;    (:command :background "DarkOrange" :brick "gold" :brick2 "gray40" :wall "gray20")
-    (:maynard :background "black" :brick "DarkOrange" :brick2 "gray40" :wall "gray20")
+    (:maynard :background "saddle brown" :brick "DarkOrange" :brick2 "gray40" :wall "gray20")
     (:zerk :background "black" :brick "maroon2" :brick2 "cyan" :wall "black")))
 
 (defun random-theme () (random-choose (mapcar #'car *themes*)))
@@ -180,6 +180,10 @@
 (define-method draw brick ()
   (draw-box %x %y %width %height :color (theme-color %part)))
 
+(define-method collide brick (thing)
+  (when (is-brick thing)
+    (message "brick collision ~S" (gensym))))
+
 ;;; Breakable block barriers that pass enemies and enemy bullets but
 ;;; not player bullets
 
@@ -197,7 +201,7 @@
   (percent-of-time 15 (setf %color (random-choose '("cyan" "DeepSkyBlue"))))
   (with-field-values (x y width height hp) self
     (let ((edge (max 0 (* 0.5 (- width (* width (/ hp *barrier-hp*)))))))
-      (draw-box x y width height :color "magenta")
+      (draw-box x y width height :color (random-choose '("red" "yellow")))
       (draw-box (+ x edge) (+ y edge)
 		(- width (* edge 2))
 		(- height (* edge 2))
@@ -613,7 +617,7 @@
 (define-method collide trail (thing)
   (unless (is-glitch thing)
     (when (is-enemy thing)
-      (destroy thing))))
+      (damage thing 1))))
 
 ;;; Player shield
 
@@ -687,8 +691,9 @@
   (damage thing 2))
 
 (defun make-explosion (thing &optional (size 8))
-  (dotimes (n size)
-    (drop thing (new explosion))))
+  (multiple-value-bind (x y) (center-point thing)
+    (dotimes (n size)
+      (add-block (world) x y))))
   
 (defresource
     (:name "mine" :type :image :file "bomb.png")
@@ -873,6 +878,7 @@
   (height :initform 16)
   (width :initform 16)
   (hp :initform 3)
+  (glide-heading :initform nil)
   (speech-timer :initform 0)
   (bomb-loaded :initform t)
   (energy :initform 100)
@@ -930,7 +936,7 @@
 (define-method update-shields robot ()
   (with-fields (shields heading) self
     (when shields
-      (charge self 0.43)
+      (charge self 0.3)
       (if (zerop %energy)
 	  (lower-shields self)
 	  (let ((angle (- heading (/ *shield-spread* 2)))
@@ -1020,7 +1026,8 @@
   (play-music "vixon")
   (let ((sign (new win)))
     (drop self sign 32 32)
-    (center sign)))
+    (center sign)
+    (later 3.5 (destroy sign))))
 
 (define-method collide robot (thing)
   (cond
@@ -1028,8 +1035,10 @@
      (damage self 1))
     ((is-barrier thing)
      (damage self 1))
-    ((is-brick thing)
+    ((and (is-brick thing))
      (restore-location self))))
+    ;; possibly glide along wall
+    ;; (setf %glide-heading (round %heading (/ pi 2))))))
 
 (define-method aim robot (angle)
   (setf %heading angle))
@@ -1059,15 +1068,18 @@
     (auto-recharge self)
     (update-shields self)
     (when (left-analog-stick-pressed-p)
-      (aim self (left-analog-stick-heading))
-      (move-forward self 3.5)
-      (drop-trail-maybe self))
+      (let ((heading (left-analog-stick-heading)))
+	(aim self heading)
+	(move-forward self 3.5)
+;	(drop-trail-maybe self)
+	))
     (if (right-analog-stick-pressed-p)
 	(progn (aim self (right-analog-stick-heading))
 	       (when (joystick-button-pressed-p :r2)
 		 (fire self (right-analog-stick-heading))))
 	(when (joystick-button-pressed-p :r2)
-	  (fire self %heading)))))
+	  (fire self %heading)))
+    (setf %glide-heading nil)))
 	
 ;;; Stationary bases that generate enemies
 
@@ -1076,11 +1088,11 @@
 (define-block base :image "base" :ready nil :timer 70 :tags '(:enemy) :hp 15)
 
 (define-method update base ()
-  (when (< (distance-to-player self) 240)
+  (when (< (distance-to-player self) 290)
     (decf %timer)
     (when (zerop %timer)
       (setf %timer 100)
-      (percent-of-time 20
+      (percent-of-time 14
 	(play-sample "vox-radiation")
 	(dotimes (n 3)
 	  (drop self (new glitch))))
@@ -1101,11 +1113,10 @@
 
 ;;; The reactor
 
-
 (define-world reactor
   (level-clear :initform nil)
-  (enemy-count :initform nil))
- ; (background-color :initform (theme-color :background)))
+  (enemy-count :initform nil)
+  (background-color :initform (theme-color :background)))
 
 (defparameter *wall-thickness* 16)
 
@@ -1131,28 +1142,18 @@
     (draw-wall self size)
     (turn-right self)))
 
-(define-method draw-base reactor (size0)
-  (let ((size (max 6 size0)))
-    (drop self (new base)
-	  (unit (+ 2 (random (- size 2))))
-	  (unit (+ 2 (random (- size 2)))))
-    (dotimes (n 4)
-      (let ((gap (+ 2 (random 2))))
+(define-method draw-base reactor (size0 &optional (bases 1))
+  (let ((size (+ 10 size0)))
+    (dotimes (n bases)
+      (drop self (new base)
+	    (unit (+ 2 (random (- size 2))))
+	    (unit (+ 2 (random (- size 2))))))
+    (let ((gap (+ 2 (random 2))))
+      (dotimes (n 4)
 	(draw-wall self (- size gap 2))
-	(draw-barrier self 2)
-	(draw-wall self size)
-	(draw-barrier self 3)
-	(turn-right self)))))
-
-(define-method draw-room reactor (size0)
-  (let ((size (max 4 size0)))
-    (dotimes (n 4)
-      (let ((gap (1+ (random 4))))
-	(draw-wall self (- size gap))
 	(draw-barrier self gap)
-	(draw-wall self size)
-	(move-forward self (unit 2))
-	(draw-barrier self (- gap 1))
+	(draw-wall self 2)
+	(draw-wall self 2)
 	(turn-right self)))))
 
 (define-method draw-solid-room reactor (width height)
@@ -1177,92 +1178,33 @@
 
 (define-method build reactor (&optional (level 1))
   (setf *theme* (random-theme))
+  (setf %background-color (theme-color :background))
   (setf %window-scrolling-speed 6)
   (move-window-to self 0 0)
   (paste self 
-	 (shrink-wrap
-	  (with-world-prototype self
-	    (wall-around 
-	     (border-around
-	      (with-new-world (draw-base self (+ 2 (random 8)))) 
-	      200)))))
+	 (with-world-prototype self
+	   (wall-around 
+	    (border-around
+	     (with-new-world (draw-base self (+ 2 (random 3))))
+	     200))))
   (shrink-wrap self))
 
-
-  ;; 	 (shrink-wrap
-  ;; 	  (with-world-prototype self
-  ;; 	    (wall-around 
-  ;; 	     (border-around
-  ;; 	      (stack-horizontally 
-  ;; 	       (border-around (with-new-world (draw-room self (+ 5 (random 8)))) 100)
-  ;; 	       (border-around (with-new-world (draw-base self (+ 2 (random 8)))) 80))
-  ;; 	      200)))))
-  ;; (shrink-wrap self))
-
-
-
-;; (bounding-box (world))
-
-  ;; 	 (with-world-prototype self
-  ;; 	   (wall-around 
-  ;; 	    (border-around
-  ;; 	     (combine 
-  ;; 	      (with-new-world (draw-room self (+ 20 (random 8))))
-  ;; 	      (translate (with-new-world (draw-base self (+ 2 (random 8))))
-  ;; 			 (unit (+ 10 (random 3))) (unit (+ 5 (random 4)))))
-  ;; 	     (+ 100 (random 60))))))
-  ;; (shrink-wrap self))
-  
-	     ;; (stack-vertically
-	     ;;  (border-around
-	     ;;   (stack-horizontally 
-	     ;; 	(border-around
-	     ;; 	 (with-new-world
-	     ;; 	   (draw-base (world) (+ 4 (random 4)))) 
-	     ;; 	 (+ 20 (random 35)))
-	     ;; 	(border-around
-	     ;; 	 (with-new-world
-	     ;; 	   (draw-base (world) (+ 4 (random 4))))
-	     ;; 	 (+ 16 (random 18)))))
-	     ;;  (border-around
-	     ;;   (stack-horizontally 
-	     ;; 	(border-around
-	     ;; 	 (with-new-world
-	     ;; 	   (draw-base (world) (+ 4 (random 4)))))
-	     ;; 	(border-around
-	     ;; 	 (with-new-world
-	     ;; 	   (draw-base (world) (+ 4 (random 4))))))))))))
-
-	    ;; (shrink-wrap 
-	    ;;    (stack-vertically 
-	    ;; 	(stack-horizontally
-	    ;; 	 (with-new-world 
-	    ;; 	   (draw-room (world) (+ 4 (random 3))))
-	    ;; 	 (scale 
-	    ;; 	  (with-new-world 
-	    ;; 	    (draw-room (world) (+ 2 (random 3))))
-	    ;; 	  0.5)
-	    ;; 	 (scale 
-	    ;; 	  (with-new-world 
-	    ;; 	    (draw-room (world) (+ 2 (random 3))))
-	    ;; 	  2)
-	    ;; 	 (stack-horizontally
-	    ;; 	  (with-new-world 
-	    ;; 	    (draw-room (world) (+ 2 (random 3))))
-	    ;; 	  (scale 
-	    ;; 	   (with-new-world 
-	    ;; 	     (draw-room (world) (+ 4 (random 3))))
-	    ;; 	   0.5)
-	    ;; 	  (scale 
-	    ;; 	   (with-new-world 
-	    ;; 	     (draw-room (world) (+ 4 (random 3))))
-	    ;; 	   3)))))))))
+;; 	 (with-world-prototype self
+;; 	   (wall-around 
+;; 	    (border-around
+;;   	     (combine 
+;;   	      (with-new-world (draw-base self 18 0))
+;; ;	      (with-new-world (add-block self (new rook) 100 100))
+;; 	      (border-around
+;; 	       (with-new-world (draw-base self (+ 2 (random 3))))
+;; 	       200))
+;; 	     200))))
 	       	     
 (define-method draw reactor ()
-  (draw%%world self)
   ;; heads up display
   (multiple-value-bind (top left right bottom)
       (window-bounding-box self)
+    (draw%%world self)
     (with-field-values (energy chips item) (player)
       (with-field-values (enemy-count) self
 	(let* ((font *xalcyon-font*)
@@ -1290,6 +1232,7 @@
   
 (define-method update reactor ()
   (update%%world self)
+  (setf %background-color (theme-color :background))
   (unless %level-clear
     (let ((enemy-count 0))
       (loop for object being the hash-keys in %objects do
