@@ -1034,7 +1034,7 @@
   (let ((sign (new win)))
     (drop self sign 32 32)
     (center sign)
-    (later 5 (destroy sign))))
+    (later 5.0 (destroy sign))))
 
 (define-method collide robot (thing)
   (cond
@@ -1306,7 +1306,7 @@
 (defun xalcyon ()
   (let ((robot (new robot))
 	(reactor (new reactor)))
-;    (play-music (random-choose *soundtrack*) :loop t)
+    (play-music (random-choose *soundtrack*) :loop t)
     (set-location robot 60 60)
     (bind-event reactor '(:escape) :reset)
     (ecase (random 3)
