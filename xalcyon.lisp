@@ -1132,13 +1132,12 @@
 
 (define-method draw-wall reactor (length)
   (let (round %heading (/ pi 2))
-
-  (dotimes (n length)
-    (let ((brick (new brick)))
-      (drop self brick)
-      (resize brick *wall-thickness* *wall-thickness*)
-      (move-forward self (unit)))))
-
+    (dotimes (n length)
+      (let ((brick (new brick)))
+	(drop self brick)
+	(resize brick *wall-thickness* *wall-thickness*)
+	(move-forward self (unit))))))
+  
 (define-method draw-barrier reactor (length)
   (dotimes (n length)
     (let ((barrier (new barrier)))
