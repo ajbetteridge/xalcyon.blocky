@@ -6,7 +6,7 @@ Check out a [[http://ompldr.org/vY201bA/xalcyon-beta.mp4][video]] of XALCYON.
 
 Downloads for various platforms are located on [[https://github.com/dto/xalcyon.blocky/downloads][the Xalcyon downloads page.]]
 
-* Install 
+* Play 
 
 If you are a Windows user, unzip the XALCYON-WIN32.ZIP file and look
 for XALCYON.EXE in the resulting folder. You may also need to edit
