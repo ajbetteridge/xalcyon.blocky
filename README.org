@@ -10,7 +10,8 @@ Downloads for various platforms are located on [[https://github.com/dto/xalcyon.
 
 If you are a Windows user, unzip the XALCYON-WIN32.ZIP file and look
 for XALCYON.EXE in the resulting folder. You may also need to edit
-BLOCKY-INIT.LISP to set up your joystick buttons/axes.
+BLOCKY-INIT.LISP to set up your joystick buttons/axes. (Sorry, I will
+have a proper button config screen soon.)
 
 Please see the [[https://github.com/dto/blocky/blob/master/INSTALL][installation instructions]] for Blocky, and also
 [[https://github.com/dto/blocky/blob/master/blocky-init.lisp][blocky-init.lisp]] for info on how to configure the joystick.
