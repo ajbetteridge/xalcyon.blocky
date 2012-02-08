@@ -1,3 +1,7 @@
+* Download
+
+Downloads for various platforms are located on [[https://github.com/dto/xalcyon.blocky/downloads][the Xalcyon downloads page.]]
+
 * Install 
 
 If you are a Windows user, unzip the XALCYON-WIN32.ZIP file and look
