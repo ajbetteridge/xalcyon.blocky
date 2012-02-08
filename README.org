@@ -13,8 +13,10 @@ for XALCYON.EXE in the resulting folder. You may also need to edit
 BLOCKY-INIT.LISP to set up your joystick buttons/axes. (Sorry, I will
 have a proper button config screen soon.)
 
-Linux users: Please see the [[https://github.com/dto/blocky/blob/master/INSTALL][installation instructions]] for Blocky, and
-also [[https://github.com/dto/blocky/blob/master/blocky-init.lisp][blocky-init.lisp]] for info on how to configure the joystick.
+Linux users: The file XALCYON.APP is the 32-bit GNU/Linux executable
+program. You will need to have installed the SDL libraries.  Please
+see the [[https://github.com/dto/blocky/blob/master/INSTALL][installation instructions]] for Blocky, and also
+[[https://github.com/dto/blocky/blob/master/blocky-init.lisp][blocky-init.lisp]] for info on how to configure the joystick.
 
 * About 
 
