@@ -1,3 +1,7 @@
+* Video 
+
+http://ompldr.org/vY201bA/xalcyon-beta.mp4
+
 * Download
 
 Downloads for various platforms are located on [[https://github.com/dto/xalcyon.blocky/downloads][the Xalcyon downloads page.]]
@@ -28,9 +32,9 @@ are destroyed, the gateway to the next level will appear.
 
 As in XONG, one single hit from any bullet or enemy or explosion will
 kill you and completely end the current game. However, you can simply
-hit START on the joystick to generate a fresh scenario starting from
-level 1. Sudden permadeath increases tension, but characters are quite
-disposable, so it becomes a score challenge.
+hit ESCAPE to generate a fresh scenario starting from level 1. Sudden
+permadeath increases tension, but characters are quite disposable, so
+it becomes a score challenge.
 
 Your robot can hold and use one item at a time. The player starts the
 game with a shield which blocks bullets coming from the direction the
