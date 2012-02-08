@@ -33,7 +33,7 @@
 (setf *nominal-screen-height* 540)
 (setf *window-title* "Xalcyon")
 (setf *use-antialiased-text* nil)
-(setf *scale-output-to-window* t)
+(setf *scale-output-to-window* nil)
 (setf *frame-rate* 30)
 
 (defvar *xalcyon-font* "sans-mono-bold-16") 
@@ -1127,10 +1127,12 @@
 
 (defparameter *wall-thickness* 20)
 
-(defun unit (&optional (units 1))
+(defun unit (&optional (units 1)) 
   (* units *wall-thickness*))
 
 (define-method draw-wall reactor (length)
+  (let (round %heading (/ pi 2))
+
   (dotimes (n length)
     (let ((brick (new brick)))
       (drop self brick)
