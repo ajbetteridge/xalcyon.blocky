@@ -63,7 +63,8 @@ dangerous in groups. They turn red when they're badly damaged.
 
 Much more to come...
 
-** TODO *dance-tracks* *ambient-tracks* 
+** TODO play the game for a few minutes and take notes
+
 ** TODO [#B] auto-resize quadtree to width, come up with a formula
 ** TODO exit that opens to next level when completed
 ** TODO groovy video w new musics

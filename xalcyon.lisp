@@ -138,7 +138,7 @@
 (defparameter *special-tracks*
   (defresource 
       (:name "vixon" :type :music :file "vixon.ogg")
-      (:name "suspiria" :type :music :file "suspiria.ogg")
+      (:name "suspiria-synthesis" :type :music :file "suspiria-synthesis.ogg")
       (:name "vixon" :type :music :file "vixon.ogg")
     (:name "xalcyon" :type :music :file "xalcyon.ogg")
       (:name "nexttime" :type :music :file "nexttime.ogg")))
