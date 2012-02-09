@@ -1311,56 +1311,164 @@
     
 ;;; joystick setup screen 
 
-(define-visual-macro button-chooser
-  (:super list
-   :inputs ((new message :label "Assign joystick button "
-			 :button-p t
-			 :method :begin-capturing)
-	    (new integer)
-	    (new symbol :label "to symbol"))
-   :fields ((orientation :initform :vertical)
-	    (capturing :initform nil)
-	    (button-number :initform 0)))
-  ;; make joystick button entry
-  (cons (evaluate (second %inputs))
-	(evaluate (third %inputs))))
+(define-block (action-button :super :list)
+  (category :initform :button)
+  (target :initform nil)
+  (method :initform nil)
+  (arguments :initform nil)
+  (label :initform nil))
 
-(define-method initialize button-chooser (button-symbol &optional (button-number 0))
-  (mapc #'set-value %inputs (list nil button-number button-symbol))
-  (freeze self))
+(define-method initialize action-button 
+    (&key target method arguments label)
+  (when target (setf %target target))
+  (when method (setf %method method))
+  (when label (setf %label label))
+  (when arguments (setf %arguments arguments)))
 
-(define-method begin-capturing button-chooser ()
+(define-method layout action-button ()
+  (with-fields (height width) self
+    (setf width (+ (* 13 (dash))
+		   (font-text-width %label
+				    *block-bold*))
+	  height (+ (font-height *block-bold*) (* 4 (dash))))))
+
+(define-method draw action-button ()
+  (with-fields (x y height width label) self
+    (draw-patch self x y (+ x width) (+ y height))
+    (draw-image "colorbang" 
+		    (+ x (dash 1))
+		    (+ y (dash 1)))
+    (draw-string %label (+ x (dash 9)) (+ y (dash 2))
+		 :color "white"
+		 :font *block-bold*)))
+
+(define-method tap action-button (x y)
+  (apply #'send %method %target %arguments))
+
+;;; configuring joystick buttons
+
+(define-block (button-chooser :super "BLOCKY:LIST")
+  (orientation :initform :vertical)
+  (capturing :initform nil)
+  (button-symbol :initform nil)
+  (button-number :initform 0))
+
+(define-method begin-capturing button-chooser (symbol)
   (setf %capturing t)
-  (grab-focus (second %inputs)))
+  (setf %button-symbol symbol))
 
-(define-method handle-event button-chooser (event)
+(define-method draw button-chooser ()
+  (super%draw self)
+  (when %capturing
+    (draw-focus (second %inputs))))
+
+(define-method capture button-chooser (event)
   (when (and %capturing (is-raw-joystick-event event))
     (let ((button-number (second event)))
       (assert (integerp button-number))
       (setf %capturing nil)
       (grab-focus self) 
+      ;; update gui
+      (set-value (second %inputs) button-number)
       (setf %button-number button-number))))
+
+(define-method evaluate button-chooser ()
+  (cons %button-number (button-to-symbol %button-number)))
+
+(define-method initialize button-chooser (button-symbol &optional (button-number 0))
+  (super%initialize self
+		    (new action-button 
+			 :label (format nil "capture button ~a now." button-symbol)
+			 :arguments (list button-symbol)
+			 :target self
+			 :method :begin-capturing)
+		    (new integer
+			 :value button-number
+			 :label "use button number"))
+  (assert (keywordp button-symbol))
+  (add-hook '*event-hook* #'(lambda (event) (capture self event)))
+  (setf %button-symbol button-symbol)
+  (freeze self))
+
+;;; Joystick axis configurator
+
+(defparameter *axis-image-size* 60)
+
+(define-block axis-chooser)
+
+;;; Message output window
+
+(define-block messenger :category :terminal)
+
+(defparameter *messenger-columns* 80)
+(defparameter *messenger-rows* 8)
+
+(define-method layout messenger ()
+  (setf %height (+ (* (font-height *font*) *messenger-rows*)
+		   (dash 4)))
+  (let ((width 0))
+    (block measuring
+      (dotimes (n *messenger-rows*)
+	(if (<= (length *message-history*) n)
+	    (return-from measuring nil)
+	    (setf width 
+		  (max width 
+		       (font-text-width 
+			(nth n *message-history*)
+			*block-font*))))))
+    (setf %width (+ width (dash 2)))))
+			     
+(define-method draw messenger ()
+  (draw-background self)
+  (with-fields (x y width height) self
+      (let ((y0 (+ y height (- (font-height *font*))))
+	    (x0 (+ x (dash 2))))
+	(dotimes (n *messenger-rows*)
+	  (unless (<= (length *message-history*) n)
+	    (draw-string (nth n *message-history*)
+			 x0 y0
+			 :color "gray70"
+			 :font *block-font*)
+	    (decf y0 (font-height *font*)))))))
+
+;;; The configurator dialog
 
 (defparameter *xalcyon-saved-variables* 
 '(*user-joystick-profile*
   *joystick-dead-zone* 
   *joystick-axis-size*))
 
-(define-visual-macro button-config 
-    (:super list
-     :inputs ((new button-chooser :left-trigger)
-	      (new button-chooser :right-trigger)))
+(define-block (button-config :super :list))
+
+(define-method initialize button-config ()
+  (apply #'super%initialize 
+	 self
+	 (list
+	  (new button-chooser :left-trigger)
+	  (new button-chooser :right-trigger)
+	  (new action-button 
+	       :label "apply changes"
+	       :method :apply-changes
+	       :target self)
+	  (new messenger)))
+  (freeze self))
+
+(define-method apply-changes button-config ()
   (let* ((profile (copy-tree (joystick-profile)))
-	 (buttons (mapcar #'evaluate %inputs)))
+	 (buttons (list 
+		   (evaluate (first %inputs))
+		   (evaluate (second %inputs)))))
     (setf (getf profile :buttons) buttons)
     (setf *user-joystick-profile* profile)
     (blocky:save-variables *xalcyon-saved-variables*)))
 
+;;; The setup page
+
 (define-block setup)
 
 (define-method initialize setup ()
-  (add-block self (new listener) 100 100)
-  (add-block self (new button-config) 300 300))
+  (super%initialize self)
+  (add-block self (new button-config) 110 60))
 
 ;;; a widget to flip between the game screen and setup screen
 
