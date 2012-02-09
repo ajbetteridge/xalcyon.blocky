@@ -63,20 +63,28 @@ dangerous in groups. They turn red when they're badly damaged.
 
 Much more to come...
 
+** TODO make menubar togglable, plus MERGE shell into world with a hotkey to switch modes
+*** TODO wait, maybe not.... algebra of worlds might such with that many fields???
+** TODO allow BLOCKY:CLONE to accept non-keyword symbols
+** TODO optimize draw-wall to make one object per call
+** TODO save-tagged-objects: for saving user config data like joystick buttons
+*** TODO OR, save just variables? allow saving just some (safe) variables
+** TODO basic switching between F1 
+** TODO opening menu has basic tips and joystick config screen built in... help room plus "story" room plus "play" room
 ** TODO play the game for a few minutes and take notes
-
-** TODO [#B] auto-resize quadtree to width, come up with a formula
 ** TODO exit that opens to next level when completed
-** TODO groovy video w new musics
-** TODO LEVEL TEMPLATES
+** TODO basic in-game help screen (doubles as pause feature) on F1, any joystick button to cancel
+** TODO story scroll
 *** TODO archive: a few monitors in a very simple berzerky environment.
 *** TODO outpost: open area with 1 difficult base, spewing monitors and radiation hazard
+*** TODO place flares in certain locations
 *** TODO radiation vent chambers, floating hot clouds and jets, simply subdivided, with guys who throw bombs at you
 **** TODO level divided into two unequal portions by a barrier with a gap, and moving enemies who spawn color creepers
 *** TODO multi-ring concentric squares megabase w interior turrets and gates you have to unlock
 *** TODO small rooms with item boxes so that often theres access to the bomb.
 ** TODO destroy-region, select-region, get-region-objects
 ** TODO Restrict objects movement to active quadtree space
+** TODO [#B] auto-resize quadtree to width, come up with a formula
 ** TODO grammars that boil down to simple lisp functions invoking methods for making worlds etc
 ** TODO world building routines that are parameterized with a bounding box or worldq
 ** TODO [#A] Worlds full of markers like "base marker" and "corridor", and those can recursively expand into objects and more markers

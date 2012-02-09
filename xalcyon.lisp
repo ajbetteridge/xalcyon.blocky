@@ -27,16 +27,17 @@
 
 (defvar *level* 1)
 
+(setf *author* "David T. O'Toole <dto@ioforms.org> http://dto.github.com/notebook/")
 (setf *screen-width* 840)
 (setf *screen-height* 540)
 (setf *nominal-screen-width* 840)
 (setf *nominal-screen-height* 540)
 (setf *window-title* "Xalcyon")
-(setf *use-antialiased-text* nil)
-(setf *scale-output-to-window* nil)
+(setf *use-antialiased-text* t)
+(setf *scale-output-to-window* t)
 (setf *frame-rate* 30)
 
-(defvar *xalcyon-font* "sans-mono-bold-16") 
+(defparameter *xalcyon-font* "sans-bold-14") 
 
 (defun is-enemy (thing) 
   (has-tag thing :enemy))
@@ -919,8 +920,8 @@
 
 (define-method initialize robot ()
   (super%initialize self)
-  (bind-event self '(:joystick :button-down :l2) :activate-extension)
-  (bind-event self '(:joystick :button-up :l2) :deactivate-extension))
+  (bind-event self '(:joystick :button-down :l1) :activate-extension)
+  (bind-event self '(:joystick :button-up :l1) :deactivate-extension))
 
 (define-method draw robot ()
   (super%draw self)
@@ -1072,8 +1073,8 @@
 
 (define-method auto-recharge robot ()
   ;; don't recharge while firing or using shield
-  (unless (or (joystick-button-pressed-p :r2)
-	      (joystick-button-pressed-p :l2))
+  (unless (or (joystick-button-pressed-p :r1)
+	      (joystick-button-pressed-p :l1))
     (with-fields (dead recharge-timer) self
       (when (zerop recharge-timer)
 	(setf recharge-timer 10)
@@ -1096,9 +1097,9 @@
 	))
     (if (right-analog-stick-pressed-p)
 	(progn (aim self (right-analog-stick-heading))
-	       (when (joystick-button-pressed-p :r2)
+	       (when (joystick-button-pressed-p :r1)
 		 (fire self (right-analog-stick-heading))))
-	(when (joystick-button-pressed-p :r2)
+	(when (joystick-button-pressed-p :r1)
 	  (fire self %heading)))
     (setf %glide-heading nil)))
 	
@@ -1262,17 +1263,6 @@
 	      200))))
   (shrink-wrap self))
   
-
-;; 	 (with-world-prototype self
-;; 	   (wall-around 
-;; 	    (border-around
-;;   	     (combine 
-;;   	      (with-new-world (draw-base self 18 0))
-;; ;	      (with-new-world (add-block self (new rook) 100 100))
-;; 	      (border-around
-;; 	       (with-new-world (draw-base self (+ 2 (random 3))))
-;; 	       200))
-;; 	     200))))
 	       	     
 (define-method draw reactor ()
   ;; heads up display
@@ -1285,13 +1275,15 @@
 	       (line-height (font-height font))
 	       (x (+ left (dash 5)))
 	       (y (- bottom line-height (dash 2)))
-	       (label (format nil "ENERGY: ~3,2f    CHIP: ~d     ITEM: ~A     ENEMY: ~d" 
+	       (label (format nil "energy: ~3,2f  chip: ~d  item: ~a  enemy: ~d  |  press F1 for setup, ENTER to reset" 
 			      energy chips item enemy-count))
-	       (bar-width 200))
+	       (bar-width 120))
+	  ;; draw background
+	  (draw-box left (- y 6) *gl-screen-width* (* 4 line-height) :color "black")
 	  ;; draw energy bar 
 	  (draw-box x y bar-width line-height :color "gray30")
 	  (when (plusp energy)
-	    (draw-box x y (* 2 energy) line-height 
+	    (draw-box x y (* 1.2 energy) line-height 
 		      :color (cond 
 			       ((>= energy 85) "chartreuse")
 			       ((>= energy 70) "yellow")
@@ -1300,7 +1292,7 @@
 			       (t "orange"))))
 	  ;; show stats
 	  (draw-string label 
-		       (+ x 200 (dash)) y 
+		       (+ x bar-width (dash)) y 
 		       :color "white"
 		       :font *xalcyon-font*))))))
   
@@ -1317,21 +1309,60 @@
 	(win %player))
       (setf %enemy-count enemy-count))))
     
+;;; joystick setup screen 
+
+(define-block setup screen
+
+;;; a widget to flip between the game screen and setup screen
+
+(defvar *game-screen* nil)
+(defvar *setup-screen* nil)
+
+(define-block flipper screen)
+
+(define-method show-setup-screen flipper ()
+  (setf %screen *setup-screen*))
+
+(define-method show-game-screen flipper ()
+  (setf %screen *game-screen*))
+
+(define-method draw flipper ()
+  (draw %screen))
+
+(define-method update flipper ()
+  (update %screen))
+
+(define-method handle-event flipper (event)
+  (or (super%handle-event self event)
+      (handle-event %screen)))
+
+(define-method initialize flipper ()
+  (setf %state nil)
+  (bind-event self '(:f1) :show-setup-screen)
+  ;; people will want to quit the setup screen with Escape:
+  (bind-event self '(:escape) :show-game-screen)
+  (bind-event self '(:enter) :reset))
+
+;;; starting up the game.
+
 (defun xalcyon ()
   (let ((robot (new robot))
-	(reactor (new reactor)))
-    (play-music (random-choose *soundtrack*) :loop t)
+	(reactor (new reactor))
+	(universe (new universe 
+		       :player robot
+		       :world reactor))
+	(setup-screen (new shell (new setup)))
+	(flipper (new flipper)))
+    (setf *game-screen* universe)
+    (setf *setup-screen* setup-screen)
     (set-location robot 60 60)
-    (bind-event reactor '(:escape) :reset)
     (ecase (random 3)
       (0 (build-bombers reactor))
       (1 (build-archive reactor))
       (2 (build reactor)))
-    (new universe 
-	 :player robot
-	 :world reactor)))
+    (start flipper)))
 
-(define-method reset reactor ()
+(define-method reset flipper ()
   (xalcyon))
 
 ;;; xalcyon.lisp ends here
