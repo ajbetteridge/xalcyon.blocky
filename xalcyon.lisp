@@ -1348,7 +1348,7 @@
 ;;; configuring joystick buttons
 
 (define-block (button-chooser :super "BLOCKY:LIST")
-  (orientation :initform :vertical)
+  (orientation :initform :horizontal)
   (capturing :initform nil)
   (button-symbol :initform nil)
   (button-number :initform 0))
@@ -1358,7 +1358,7 @@
   (setf %button-symbol symbol))
 
 (define-method draw button-chooser ()
-  (super%draw self)
+  (mapc #'draw %inputs)
   (when %capturing
     (draw-focus (second %inputs))))
 
@@ -1373,12 +1373,12 @@
       (setf %button-number button-number))))
 
 (define-method evaluate button-chooser ()
-  (cons %button-number (button-to-symbol %button-number)))
+  (cons (evaluate (second %inputs)) %button-symbol))
 
 (define-method initialize button-chooser (button-symbol &optional (button-number 0))
   (super%initialize self
 		    (new action-button 
-			 :label (format nil "capture button ~a now." button-symbol)
+			 :label (format nil "capture button ~a now" button-symbol)
 			 :arguments (list button-symbol)
 			 :target self
 			 :method :begin-capturing)
@@ -1392,16 +1392,49 @@
 
 ;;; Joystick axis configurator
 
+(defvar *flipper* nil)
+
 (defparameter *axis-image-size* 60)
 
-(define-block axis-chooser)
+(defparameter *axis-bar-size* 100)
+
+(define-block (axis-chooser :super "BLOCKY:LIST")
+    (orientation :initform :horizontal)
+    axis-name axis-number)
+
+(define-method initialize axis-chooser (name number)
+  (setf %axis-name name)
+  (setf %axis-number number)
+  (super%initialize self
+		    (new symbol
+			 :value name
+			 :label "for this direction")
+		    (new integer
+			 :value number
+			 :label "use axis number")
+		    (new integer
+			 :value 0
+			 :label "(current value)"))
+  (freeze self))
+
+(define-method layout axis-chooser ()
+  (layout-horizontally self))
+
+(define-method draw axis-chooser ()
+  (mapc #'draw %inputs))
+
+(define-method update axis-chooser ()
+  (set-value (third %inputs) (joystick-axis-raw-value (evaluate (second %inputs)))))
+
+(define-method evaluate axis-chooser ()
+  (evaluate (second %inputs)))
 
 ;;; Message output window
 
 (define-block messenger :category :terminal)
 
 (defparameter *messenger-columns* 80)
-(defparameter *messenger-rows* 8)
+(defparameter *messenger-rows* 12)
 
 (define-method layout messenger ()
   (setf %height (+ (* (font-height *font*) *messenger-rows*)
@@ -1434,9 +1467,7 @@
 ;;; The configurator dialog
 
 (defparameter *xalcyon-saved-variables* 
-'(*user-joystick-profile*
-  *joystick-dead-zone* 
-  *joystick-axis-size*))
+'(*user-joystick-profile*))
 
 (define-block (button-config :super :list))
 
@@ -1446,21 +1477,38 @@
 	 (list
 	  (new button-chooser :left-trigger)
 	  (new button-chooser :right-trigger)
+	  (new axis-chooser :left-stick-horizontal 0)
+	  (new axis-chooser :left-stick-vertical 1)
+	  (new axis-chooser :right-stick-horizontal 3)
+	  (new axis-chooser :right-stick-vertical 2)
 	  (new action-button 
-	       :label "apply changes"
-	       :method :apply-changes
+	       :label "save changes"
+	       :method :save-changes
 	       :target self)
-	  (new messenger)))
+	  (new messenger)
+	  (new action-button 
+	       :label "return to game"
+	       :method :return-to-game
+	       :target self)
+	  ))
   (freeze self))
 
-(define-method apply-changes button-config ()
-  (let* ((profile (copy-tree (joystick-profile)))
-	 (buttons (list 
-		   (evaluate (first %inputs))
-		   (evaluate (second %inputs)))))
-    (setf (getf profile :buttons) buttons)
-    (setf *user-joystick-profile* profile)
-    (blocky:save-variables *xalcyon-saved-variables*)))
+(define-method return-to-game button-config ()
+  (show-game-screen *flipper*))
+
+(define-method save-changes button-config ()
+  (let* ((results (mapcar #'evaluate %inputs))
+	 (buttons (list (first results)
+			(second results)))
+	 (left-stick (list (third results)
+			   (fourth results)))
+	 (right-stick (list (fifth results)
+			    (sixth results))))
+    (setf *user-joystick-profile* 
+	  (list :buttons buttons
+		:left-analog-stick left-stick
+		:right-analog-stick right-stick))
+    (blocky:save-variables '(*user-joystick-profile*))))
 
 ;;; The setup page
 
@@ -1504,6 +1552,7 @@
       (handle-event %screen event)))
 
 (define-method initialize flipper ()
+  (setf *flipper* self)
   (setf %state nil)
   (bind-event self '(:f1) :show-setup-screen)
   ;; people will want to quit the setup screen with Escape:
@@ -1522,15 +1571,15 @@
     (set-location robot 60 60)
     (setf *game-screen* reactor)
     (setf *setup-screen* setup-screen)
-;    (setf *world* reactor)
-    ;; (ecase (random 3)
-    ;;   (0 (build-bombers reactor))
-    ;;   (1 (build-archive reactor))
-    ;;   (2 (build reactor)))
+    (with-world reactor
+      (ecase (random 3)
+	(0 (build-bombers reactor))
+	(1 (build-archive reactor))
+	(2 (build reactor))))
     (show-game-screen flipper)
-    (start flipper)))
+    (setf *blocks* (list flipper))))
 
-(define-method reset flipper ()
+(define-method reset reactor ()
   (xalcyon))
 
 ;;; xalcyon.lisp ends here
