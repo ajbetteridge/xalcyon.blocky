@@ -134,19 +134,19 @@
     (:name "xmrio" :type :music :file "xmrio.ogg")
     (:name "rappy" :type :music :file "rappy.ogg")
     (:name "theme3" :type :music :file "theme3.ogg")
+    (:name "suspiria-synthesis" :type :music :file "suspiria-synthesis.ogg")
     (:name "vedex" :type :music :file "vedex.ogg")
     (:name "ompula" :type :music :file "ompula.ogg")))
     
 (defparameter *special-tracks*
   (defresource 
       (:name "vixon" :type :music :file "vixon.ogg")
-      (:name "suspiria-synthesis" :type :music :file "suspiria-synthesis.ogg")
       (:name "vixon" :type :music :file "vixon.ogg")
     (:name "xalcyon" :type :music :file "xalcyon.ogg")
       (:name "nexttime" :type :music :file "nexttime.ogg")))
 
 (defparameter *soundtrack*
-  (append *special-tracks* *dance-tracks* *ambient-tracks*))
+  (append *dance-tracks* *ambient-tracks*))
 
 ;;; Colored, themeable bricks that make up the environment
 
@@ -543,7 +543,7 @@
     (make-sparks (- %x 16) (- %y 16))
     (play-sound self "xplod")
     (drop-chips self)
-    (percent-of-time 60 (drop self (random-powerup)))
+    (percent-of-time 70 (drop self (random-powerup)))
     (destroy self)))
 
 (define-method fire monitor (direction)
@@ -876,7 +876,7 @@
     (destroy self)))
 
 (defun random-powerup ()
-  (clone (random-choose '("XALCYON:ENERGY-AMMO" "XALCYON:BOMB-AMMO" "XALCYON:SHIELD-AMMO"))))
+  (clone (random-choose '("XALCYON:ENERGY-AMMO" "XALCYON:ENERGY-AMMO" "XALCYON:BOMB-AMMO" "XALCYON:SHIELD-AMMO"))))
 
 ;;; The player
 
@@ -1166,7 +1166,7 @@
     (turn-right self)))
 
 (define-method draw-base reactor (size0 &optional (bases 1))
-  (let ((size (+ 10 size0)))
+  (let ((size (+ 8 size0)))
     (dotimes (n bases)
       (drop self (new base)
 	    (unit (+ 2 (random (- size 2))))
@@ -1179,7 +1179,7 @@
 	(draw-wall self 2)
 	(turn-right self)))))
 
-(define-method draw-bunker reactor (size0 &optional (monitors 2))
+(define-method draw-bunker reactor (size0 &optional (monitors 5))
   (let ((size (+ 6 size0)))
     (let ((gap (+ 3 (random 2))))
       (dotimes (n 4)
@@ -1237,12 +1237,12 @@
 	    (border-around
 	     (stack-horizontally 
 	      (border-around
-	       (with-new-world (draw-bunker (world) (+ 7 (random 4))))
-	       100)
+	       (with-new-world (draw-bunker (world) (+ 6 (random 4))))
+	       50)
 	      (border-around
-	       (with-new-world (draw-bunker (world) (+ 7 (random 4))))
-	       100))
-	     150))))
+	       (with-new-world (draw-bunker (world) (+ 4 (random 6))))
+	       50))
+	     100))))
   (shrink-wrap self))
 
 (define-method build-bombers reactor ()
@@ -1255,7 +1255,7 @@
 	   (wall-around 
 	    (border-around
 	     (combine
-	      (with-new-world (draw-bunker (world) (+ 10 (random 6))))
+	      (with-new-world (draw-bunker (world) (+ 3 (random 6))))
 	      (border-around 
 	       (with-new-world (dotimes (n 3)
 				 (drop (world) (new rook) 
@@ -1467,7 +1467,7 @@
 ;;; The configurator dialog
 
 (defparameter *xalcyon-saved-variables* 
-'(*user-joystick-profile*))
+  '(*user-joystick-profile* *joystick-dead-zone*))
 
 (define-block (button-config :super :list))
 
@@ -1481,6 +1481,7 @@
 	  (new axis-chooser :left-stick-vertical 1)
 	  (new axis-chooser :right-stick-horizontal 3)
 	  (new axis-chooser :right-stick-vertical 2)
+	  (new integer :value 6000 :label "joystick dead zone for values below")
 	  (new action-button 
 	       :label "save changes"
 	       :method :save-changes
@@ -1508,7 +1509,8 @@
 	  (list :buttons buttons
 		:left-analog-stick left-stick
 		:right-analog-stick right-stick))
-    (blocky:save-variables '(*user-joystick-profile*))))
+    (setf *joystick-dead-zone* (seventh results))
+    (blocky:save-variables *xalcyon-saved-variables*)))
 
 ;;; The setup page
 
@@ -1577,6 +1579,7 @@
 	(1 (build-archive reactor))
 	(2 (build reactor))))
     (show-game-screen flipper)
+    (play-music (random-choose *soundtrack*) :loop t)
     (setf *blocks* (list flipper))))
 
 (define-method reset reactor ()
