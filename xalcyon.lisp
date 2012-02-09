@@ -345,7 +345,9 @@
     ((and (is-barrier thing)
 	  (is-enemy-bullet self))
      nil)
-    ((is-powerup thing)
+    ;; don't get hung up on collectibles
+    ((or (is-powerup thing)
+	 (is-chip thing)))
      nil)
     ;; hit enemies with player bullets
     ((and (is-player-bullet self)
