@@ -63,8 +63,7 @@ dangerous in groups. They turn red when they're badly damaged.
 
 Much more to come...
 
-** TODO make menubar togglable, plus MERGE shell into world with a hotkey to switch modes
-*** TODO wait, maybe not.... algebra of worlds might such with that many fields???
+** TODO make menubar togglable or DISABLED, plus MERGE shell into world with a hotkey to switch modes
 ** TODO allow BLOCKY:CLONE to accept non-keyword symbols
 ** TODO optimize draw-wall to make one object per call
 ** TODO save-tagged-objects: for saving user config data like joystick buttons

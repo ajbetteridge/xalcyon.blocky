@@ -28,10 +28,11 @@
 (defvar *level* 1)
 
 (setf *author* "David T. O'Toole <dto@ioforms.org> http://dto.github.com/notebook/")
-(setf *screen-width* 840)
-(setf *screen-height* 540)
-(setf *nominal-screen-width* 840)
-(setf *nominal-screen-height* 540)
+(setf *screen-width* 860)
+(setf *screen-height* 530)
+(setf *nominal-screen-width* 860)
+(setf *nominal-screen-height* 530)
+(setf *resizable* t)
 (setf *window-title* "Xalcyon")
 (setf *use-antialiased-text* t)
 (setf *scale-output-to-window* t)
@@ -919,9 +920,9 @@
       (setf speech-timer 280))))
 
 (define-method initialize robot ()
-  (super%initialize self)
-  (bind-event self '(:joystick :button-down :l1) :activate-extension)
-  (bind-event self '(:joystick :button-up :l1) :deactivate-extension))
+  (initialize%%block self)
+  (bind-event self '(:joystick :button-down :left-trigger) :activate-extension)
+  (bind-event self '(:joystick :button-up :left-trigger) :deactivate-extension))
 
 (define-method draw robot ()
   (super%draw self)
@@ -1073,8 +1074,8 @@
 
 (define-method auto-recharge robot ()
   ;; don't recharge while firing or using shield
-  (unless (or (joystick-button-pressed-p :r1)
-	      (joystick-button-pressed-p :l1))
+  (unless (or (joystick-button-pressed-p :right-trigger)
+	      (joystick-button-pressed-p :left-trigger))
     (with-fields (dead recharge-timer) self
       (when (zerop recharge-timer)
 	(setf recharge-timer 10)
@@ -1097,9 +1098,9 @@
 	))
     (if (right-analog-stick-pressed-p)
 	(progn (aim self (right-analog-stick-heading))
-	       (when (joystick-button-pressed-p :r1)
+	       (when (joystick-button-pressed-p :right-trigger)
 		 (fire self (right-analog-stick-heading))))
-	(when (joystick-button-pressed-p :r1)
+	(when (joystick-button-pressed-p :right-trigger)
 	  (fire self %heading)))
     (setf %glide-heading nil)))
 	
@@ -1262,7 +1263,6 @@
 				       (random (* 2 (unit 5))))))))
 	      200))))
   (shrink-wrap self))
-  
 	       	     
 (define-method draw reactor ()
   ;; heads up display
@@ -1275,7 +1275,7 @@
 	       (line-height (font-height font))
 	       (x (+ left (dash 5)))
 	       (y (- bottom line-height (dash 2)))
-	       (label (format nil "energy: ~3,2f  chip: ~d  item: ~a  enemy: ~d  |  press F1 for setup, ENTER to reset" 
+	       (label (format nil "energy: ~3,2f  chip: ~d  item: ~a  enemy: ~d  |  press F1 for setup, SPACE to reset" 
 			      energy chips item enemy-count))
 	       (bar-width 120))
 	  ;; draw background
@@ -1311,7 +1311,56 @@
     
 ;;; joystick setup screen 
 
-(define-block setup screen
+(define-visual-macro button-chooser
+  (:super list
+   :inputs ((new message :label "Assign joystick button "
+			 :button-p t
+			 :method :begin-capturing)
+	    (new integer)
+	    (new symbol :label "to symbol"))
+   :fields ((orientation :initform :vertical)
+	    (capturing :initform nil)
+	    (button-number :initform 0)))
+  ;; make joystick button entry
+  (cons (evaluate (second %inputs))
+	(evaluate (third %inputs))))
+
+(define-method initialize button-chooser (button-symbol &optional (button-number 0))
+  (mapc #'set-value %inputs (list nil button-number button-symbol))
+  (freeze self))
+
+(define-method begin-capturing button-chooser ()
+  (setf %capturing t)
+  (grab-focus (second %inputs)))
+
+(define-method handle-event button-chooser (event)
+  (when (and %capturing (is-raw-joystick-event event))
+    (let ((button-number (second event)))
+      (assert (integerp button-number))
+      (setf %capturing nil)
+      (grab-focus self) 
+      (setf %button-number button-number))))
+
+(defparameter *xalcyon-saved-variables* 
+'(*user-joystick-profile*
+  *joystick-dead-zone* 
+  *joystick-axis-size*))
+
+(define-visual-macro button-config 
+    (:super list
+     :inputs ((new button-chooser :left-trigger)
+	      (new button-chooser :right-trigger)))
+  (let* ((profile (copy-tree (joystick-profile)))
+	 (buttons (mapcar #'evaluate %inputs)))
+    (setf (getf profile :buttons) buttons)
+    (setf *user-joystick-profile* profile)
+    (blocky:save-variables *xalcyon-saved-variables*)))
+
+(define-block setup)
+
+(define-method initialize setup ()
+  (add-block self (new listener) 100 100)
+  (add-block self (new button-config) 300 300))
 
 ;;; a widget to flip between the game screen and setup screen
 
@@ -1321,45 +1370,54 @@
 (define-block flipper screen)
 
 (define-method show-setup-screen flipper ()
+  (setf *scale-output-to-window* nil)
   (setf %screen *setup-screen*))
 
 (define-method show-game-screen flipper ()
+  (setf *scale-output-to-window* t)
   (setf %screen *game-screen*))
 
 (define-method draw flipper ()
-  (draw %screen))
+  (when %screen (draw %screen)))
+
+(define-method hit flipper (x y)
+  (when %screen (hit %screen x y)))
 
 (define-method update flipper ()
-  (update %screen))
+  (when %screen
+    (update %screen)
+    (draw %screen)))
 
 (define-method handle-event flipper (event)
   (or (super%handle-event self event)
-      (handle-event %screen)))
+      (handle-event %screen event)))
 
 (define-method initialize flipper ()
   (setf %state nil)
   (bind-event self '(:f1) :show-setup-screen)
   ;; people will want to quit the setup screen with Escape:
-  (bind-event self '(:escape) :show-game-screen)
-  (bind-event self '(:enter) :reset))
+  (bind-event self '(:escape) :show-game-screen))
 
 ;;; starting up the game.
 
 (defun xalcyon ()
-  (let ((robot (new robot))
-	(reactor (new reactor))
-	(universe (new universe 
-		       :player robot
-		       :world reactor))
-	(setup-screen (new shell (new setup)))
-	(flipper (new flipper)))
+  (let* ((robot (new robot))
+	 (reactor (new reactor))
+	 (universe nil)
+	 (setup-screen (new shell (new setup)))
+	 (flipper (new flipper)))
+    (setf universe (new universe 
+			:player robot
+			:world reactor))
+    (bind-event reactor '(:space) :reset)
     (setf *game-screen* universe)
     (setf *setup-screen* setup-screen)
     (set-location robot 60 60)
-    (ecase (random 3)
-      (0 (build-bombers reactor))
-      (1 (build-archive reactor))
-      (2 (build reactor)))
+    ;; (ecase (random 3)
+    ;;   (0 (build-bombers reactor))
+    ;;   (1 (build-archive reactor))
+    ;;   (2 (build reactor)))
+    (show-game-screen flipper)
     (start flipper)))
 
 (define-method reset flipper ()
