@@ -63,7 +63,8 @@ dangerous in groups. They turn red when they're badly damaged.
 
 Much more to come...
 
-** TODO auto-resize quadtree if too many buckets are full
+** TODO *dance-tracks* *ambient-tracks* 
+** TODO [#B] auto-resize quadtree to width, come up with a formula
 ** TODO exit that opens to next level when completed
 ** TODO groovy video w new musics
 ** TODO LEVEL TEMPLATES

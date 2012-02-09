@@ -116,21 +116,35 @@
  
 ;;; Musical accompaniment
  
-(defparameter *soundtrack* 
+(defparameter *dance-tracks* 
   (defresource 
     (:name "beatup" :type :music :file "beatup.ogg")
-    (:name "frantix2" :type :music :file "frantix2.ogg")
-    (:name "xmrio" :type :music :file "xmrio.ogg")
-    (:name "phong" :type :music :file "phong.ogg")
-    (:name "remembering-xalcyon" :type :music :file "remembering-xalcyon.ogg")
+    (:name "frantix4" :type :music :file "frantix4.ogg")
     (:name "defmacron" :type :music :file "defmacron.ogg")
-    (:name "ompula" :type :music :file "ompula.ogg")
+    (:name "phong" :type :music :file "phong.ogg")
     (:name "wraparound" :type :music :file "wraparound.ogg" :properties (:volume 200))))
-;    (:name "xalcyon" :type :music :file "xalcyon.ogg")))
 
-(defresource 
-    (:name "vixon" :type :music :file "vixon.ogg")
-    (:name "nexttime" :type :music :file "nexttime.ogg"))
+(defparameter *ambient-tracks*
+  (defresource
+    (:name "remembering-xalcyon" :type :music :file "remembering-xalcyon.ogg")
+    (:name "xioforms" :type :music :file "xioforms.ogg")
+    (:name "xiomacs" :type :music :file "xiomacs.ogg")
+    (:name "xmrio" :type :music :file "xmrio.ogg")
+    (:name "rappy" :type :music :file "rappy.ogg")
+    (:name "theme3" :type :music :file "theme3.ogg")
+    (:name "vedex" :type :music :file "vedex.ogg")
+    (:name "ompula" :type :music :file "ompula.ogg")))
+    
+(defparameter *special-tracks*
+  (defresource 
+      (:name "vixon" :type :music :file "vixon.ogg")
+      (:name "suspiria" :type :music :file "suspiria.ogg")
+      (:name "vixon" :type :music :file "vixon.ogg")
+    (:name "xalcyon" :type :music :file "xalcyon.ogg")
+      (:name "nexttime" :type :music :file "nexttime.ogg")))
+
+(defparameter *soundtrack*
+  (append *special-tracks* *dance-tracks* *ambient-tracks*))
 
 ;;; Colored, themeable bricks that make up the environment
 
