@@ -921,8 +921,8 @@
 
 (define-method initialize robot ()
   (initialize%%block self)
-  (bind-event self '(:joystick :button-down :left-trigger) :activate-extension)
-  (bind-event self '(:joystick :button-up :left-trigger) :deactivate-extension))
+  (bind-event self '(:joystick :left-trigger :button-down) :activate-extension)
+  (bind-event self '(:joystick :left-trigger :button-up) :deactivate-extension))
 
 (define-method draw robot ()
   (super%draw self)
@@ -1094,7 +1094,7 @@
       (let ((heading (left-analog-stick-heading)))
 	(aim self heading)
 	(move-forward self 3.5)
-;	(drop-trail-maybe self)
+	;; (drop-trail-maybe self)
 	))
     (if (right-analog-stick-pressed-p)
 	(progn (aim self (right-analog-stick-heading))
@@ -1371,11 +1371,13 @@
 
 (define-method show-setup-screen flipper ()
   (setf *scale-output-to-window* nil)
-  (setf %screen *setup-screen*))
+  (setf %screen *setup-screen*)
+  (setf *world* *setup-screen*))
 
 (define-method show-game-screen flipper ()
   (setf *scale-output-to-window* t)
-  (setf %screen *game-screen*))
+  (setf %screen *game-screen*)
+  (setf *world* *game-screen*))
 
 (define-method draw flipper ()
   (when %screen (draw %screen)))
@@ -1385,6 +1387,7 @@
 
 (define-method update flipper ()
   (when %screen
+    (setf *world* %screen)
     (update %screen)
     (draw %screen)))
 
@@ -1401,18 +1404,17 @@
 ;;; starting up the game.
 
 (defun xalcyon ()
+  (setf *world* nil)
   (let* ((robot (new robot))
 	 (reactor (new reactor))
-	 (universe nil)
 	 (setup-screen (new shell (new setup)))
 	 (flipper (new flipper)))
-    (setf universe (new universe 
-			:player robot
-			:world reactor))
+    (set-player reactor robot)
     (bind-event reactor '(:space) :reset)
-    (setf *game-screen* universe)
-    (setf *setup-screen* setup-screen)
     (set-location robot 60 60)
+    (setf *game-screen* reactor)
+    (setf *setup-screen* setup-screen)
+;    (setf *world* reactor)
     ;; (ecase (random 3)
     ;;   (0 (build-bombers reactor))
     ;;   (1 (build-archive reactor))

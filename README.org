@@ -63,12 +63,12 @@ dangerous in groups. They turn red when they're badly damaged.
 
 Much more to come...
 
-** TODO make menubar togglable or DISABLED, plus MERGE shell into world with a hotkey to switch modes
+** DONE make menubar togglable or DISABLED, plus MERGE shell into world with a hotkey to switch modes
+   CLOSED: [2012-02-09 Thu 01:22]
 ** TODO allow BLOCKY:CLONE to accept non-keyword symbols
 ** TODO optimize draw-wall to make one object per call
-** TODO save-tagged-objects: for saving user config data like joystick buttons
-*** TODO OR, save just variables? allow saving just some (safe) variables
-** TODO basic switching between F1 
+** DONE basic switching between F1 
+   CLOSED: [2012-02-09 Thu 01:27]
 ** TODO opening menu has basic tips and joystick config screen built in... help room plus "story" room plus "play" room
 ** TODO play the game for a few minutes and take notes
 ** TODO exit that opens to next level when completed
