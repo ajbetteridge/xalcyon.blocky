@@ -1356,6 +1356,7 @@
   (button-number :initform 0))
 
 (define-method begin-capturing button-chooser (symbol)
+  (message "Now capturing. Press the joystick button you wish to use for ~a" symbol)
   (setf %capturing t)
   (setf %button-symbol symbol))
 
@@ -1370,7 +1371,9 @@
       (assert (integerp button-number))
       (setf %capturing nil)
       (grab-focus self) 
-      ;; update gui
+      ;; update gui and message output
+      (message "Captured joystick button ~d as ~a." 
+	       button-number %button-symbol)
       (set-value (second %inputs) button-number)
       (setf %button-number button-number))))
 
@@ -1439,7 +1442,7 @@
 (defparameter *messenger-rows* 12)
 
 (define-method layout messenger ()
-  (setf %height (+ (* (font-height *font*) *messenger-rows*)
+  (setf %height (+ (* (font-height *font*) (+ *messenger-rows* 1))
 		   (dash 4)))
   (let ((width 0))
     (block measuring
@@ -1451,13 +1454,16 @@
 		       (font-text-width 
 			(nth n *message-history*)
 			*block-font*))))))
-    (setf %width (+ width (dash 2)))))
+    (setf %width (+ width (dash 5)))))
 			     
 (define-method draw messenger ()
   (draw-background self)
   (with-fields (x y width height) self
-      (let ((y0 (+ y height (- (font-height *font*))))
-	    (x0 (+ x (dash 2))))
+      (let ((y0 (+ y height (- 0 (dash 2) (font-height *font*))))
+	    (x0 (+ x (dash 3))))
+	(draw-string "messages" x0 (+ y (dash 2))
+		     :color "white"
+		     :font *block-bold*)
 	(dotimes (n *messenger-rows*)
 	  (unless (<= (length *message-history*) n)
 	    (draw-string (nth n *message-history*)
@@ -1507,12 +1513,15 @@
 			   (fourth results)))
 	 (right-stick (list (fifth results)
 			    (sixth results))))
+    (message "Saving joystick configuration for xalcyon...")
     (setf *user-joystick-profile* 
 	  (list :buttons buttons
 		:left-analog-stick left-stick
 		:right-analog-stick right-stick))
     (setf *joystick-dead-zone* (seventh results))
-    (blocky:save-variables *xalcyon-saved-variables*)))
+    (blocky:save-variables *xalcyon-saved-variables*)
+    (message "Saving joystick configuration for xalcyon... Done.")
+    (message "Press ESCAPE or the 'return to game' button to continue playing.")))
 
 ;;; The setup page
 
@@ -1532,7 +1541,14 @@
 (define-method show-setup-screen flipper ()
   (setf *scale-output-to-window* nil)
   (setf %screen *setup-screen*)
-  (setf *world* *setup-screen*))
+  (setf *world* *setup-screen*)
+  (setf *message-history* nil)
+  (message "Welcome to the joystick configuration screen for Xalcyon.")
+  (message "Use your keyboard and mouse with the controls above.")
+  (message "Please note, your controller must be plugged in before you start Xalcyon.")
+  (message "Also, many controllers have an 'analog mode' button that must be toggled")
+  (message "for the analog stick movements to register with the game.")
+  (message "Press ESCAPE (or use the 'return to game' button) to resume playing."))
 
 (define-method show-game-screen flipper ()
   (setf *scale-output-to-window* t)
@@ -1581,7 +1597,7 @@
 	(1 (build-archive reactor))
 	(2 (build reactor))))
     (show-game-screen flipper)
-    (play-music (random-choose *soundtrack*) :loop t)
+;    (play-music (random-choose *soundtrack*) :loop t)
     (setf *blocks* (list flipper))))
 
 (define-method reset reactor ()

@@ -63,24 +63,30 @@ dangerous in groups. They turn red when they're badly damaged.
 
 Much more to come...
 
-** DONE make menubar togglable or DISABLED, plus MERGE shell into world with a hotkey to switch modes
-   CLOSED: [2012-02-09 Thu 01:22]
-** TODO allow BLOCKY:CLONE to accept non-keyword symbols
-** TODO optimize draw-wall to make one object per call
-** DONE basic switching between F1 
-   CLOSED: [2012-02-09 Thu 01:27]
-** TODO opening menu has basic tips and joystick config screen built in... help room plus "story" room plus "play" room
-** TODO play the game for a few minutes and take notes
-** TODO exit that opens to next level when completed
-** TODO basic in-game help screen (doubles as pause feature) on F1, any joystick button to cancel
-** TODO story scroll
-*** TODO archive: a few monitors in a very simple berzerky environment.
-*** TODO outpost: open area with 1 difficult base, spewing monitors and radiation hazard
-*** TODO place flares in certain locations
-*** TODO radiation vent chambers, floating hot clouds and jets, simply subdivided, with guys who throw bombs at you
-**** TODO level divided into two unequal portions by a barrier with a gap, and moving enemies who spawn color creepers
-*** TODO multi-ring concentric squares megabase w interior turrets and gates you have to unlock
-*** TODO small rooms with item boxes so that often theres access to the bomb.
+* TODO play the game for a few minutes and take notes
+* TODO exit that opens to next level when completed
+* TODO basic in-game help screen (doubles as pause feature) on F1, any joystick button to cancel
+** TODO archive: a few monitors in a very simple berzerky environment.
+** TODO outpost: open area with 1 difficult base, spewing monitors and radiation hazard
+** TODO place flares in certain locations
+** TODO radiation vent chambers, floating hot clouds and jets, simply subdivided, with guys who throw bombs at you
+** TODO level divided into two unequal portions by a barrier with a gap, and moving enemies who spawn color creepers
+** TODO multi-ring concentric squares megabase w interior turrets and gates you have to unlock
+** TODO small rooms with item boxes so that often theres access to the bomb.
+* TODO [#B] larger faster more menacing-sounding radiation creepers
+* TODO [#B] display level number
+* TODO [#B] easily distinguishable objects that reflect size-increased bullets 
+* TODO [#B] boss with bullets that grow larger and faster as they approach you, but move in straight line
+* TODO [#C] :target tag causes onscreen highlight (i.e. bubble)
+* TODO [#C] freeze trail to create walls
+* TODO select adventure? and difficulty? tower of doom intv http://www.youtube.com/watch?v=XYELjUGArEA
+* TODO breaking shield pieces
+* TODO Story texts, places, "PROCEED TO DATA ARCHIVE 1365" or "REACTOR"
+* TODO occasional evil Dr. Niven voice
+* TODO DTOVISION PRESENTS.. XALCYONNNN
+* TODO map screen before each level with blinking indicator of where you are in the (branching) quest?
+** TODO [#C] allow BLOCKY:CLONE to accept non-keyword symbols
+** TODO [#B] optimize draw-wall to make one object per call
 ** TODO destroy-region, select-region, get-region-objects
 ** TODO Restrict objects movement to active quadtree space
 ** TODO [#B] auto-resize quadtree to width, come up with a formula
@@ -97,19 +103,12 @@ Much more to come...
 ** TODO [#C] only draw whats onscreen
 ** TODO [#B] rename defresource to define-resource for consistency, and make it more useful (auto-type-detect naming, plus animation)
 ** TODO [#B] recharge time penalty if you run out the meter
-* TODO [#B] larger faster more menacing-sounding radiation creepers
-* TODO [#B] display level number
-* TODO [#B] easily distinguishable objects that reflect size-increased bullets 
-* TODO [#B] boss with bullets that grow larger and faster as they approach you, but move in straight line
-* TODO [#C] :target tag causes onscreen highlight (i.e. bubble)
-* TODO [#C] freeze trail to create walls
 
-* TODO select adventure? and difficulty? tower of doom intv http://www.youtube.com/watch?v=XYELjUGArEA
-* TODO breaking shield pieces
-* TODO Story texts, places, "PROCEED TO DATA ARCHIVE 1365" or "REACTOR"
-* TODO occasional evil Dr. Niven voice
-* TODO DTOVISION PRESENTS.. XALCYONNNN
-* TODO map screen before each level with blinking indicator of where you are in the (branching) quest?
+** DONE make menubar togglable or DISABLED, plus MERGE shell into world with a hotkey to switch modes
+   CLOSED: [2012-02-09 Thu 01:22]
+** DONE basic switching between F1 
+   CLOSED: [2012-02-09 Thu 01:27]
+
 
 ** DONE allow dynamically adjusting quadtree to existing objects and detect clustering, ?
    CLOSED: [2012-02-05 Sun 19:30]
