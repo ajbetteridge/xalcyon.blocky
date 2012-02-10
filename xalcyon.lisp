@@ -67,6 +67,7 @@
 
 (defparameter *vox-sounds*
   (defresource 
+      (:name "robovoxx" :type :sample :file "robovoxx.wav" :properties (:volume 120))
       (:name "vox-energy" :type :sample :file "vox-energy.wav" :properties (:volume 180))
       (:name "vox-hazard" :type :sample :file "vox-hazard.wav" :properties (:volume 180))
     (:name "vox-message" :type :sample :file "vox-message.wav" :properties (:volume 180))
@@ -623,7 +624,7 @@
 
 (define-method update biclops ()
   (when (> (level-value 300 400 500) (distance-to-player self))
-    (percent-of-time (level-value 0.5 0.5 1 1 1.5)
+    (percent-of-time (level-value 1 1 1.5 1.5 2)
       (drop self (new glitch) 10 2)))
   (move-toward self %direction (level-value 1 1.8 2.5 3)))
 
@@ -858,7 +859,7 @@
 	      (zerop timer))
 	 ;; don't always fire
 	 (percent-of-time 65 
-	   (play-sample "magenta-alert")
+	   (play-sample "robovoxx")
 	   (fire self dir))
 	 (aim self (- dir 0.52))
 	 (setf timer 90))
@@ -1332,15 +1333,15 @@
 	 (border-around (with-new-world (draw-bunker (world) (+ 7 (random 3))))
 			(level-value 50 100 30))
 	 (border-around 
-	  (with-new-world (dotimes (n (level-value 1 2 2 3 3))
+	  (with-new-world (dotimes (n (level-value 0 1 2 3))
 			    (drop (world) (new biclops) 
 				  (random (* 2 (unit 5)))
 				  (random (* 2 (unit 5))))))
 	  300))
-	(level-value 300 250 200))
+	(level-value 150 200))
        (border-around (with-new-world (draw-base self 7 (level-value 0 1 2)))
-		      150))
-      100))))
+		      80))
+      80))))
 
 ;;; Adding a HUD to the view
 	       	     
