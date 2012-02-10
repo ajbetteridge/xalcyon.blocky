@@ -64,10 +64,11 @@ dangerous in groups. They turn red when they're badly damaged.
 Much more to come...q
 
 * TODO level builder functions accept one parameter, an integer expressing difficulty level (i.e. level 1 of the game, level 2, etc, not "easy hard medium")
-
+* TODO onscreen event-responsive particle glitch grids, really quick transient effects with transparency
 * TODO new enemy and/or new item
 * TODO more themes 
 * TODO radiation cloud world
+* TODO investigate http://angg.twu.net/ICON/tron.icn
 * TODO exit that opens to next level when completed
 * TODO basic in-game help screen (doubles as pause feature) on F1, any joystick button to cancel
 ** TODO archive: a few monitors in a very simple berzerky environment.
