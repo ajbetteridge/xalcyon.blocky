@@ -25,7 +25,7 @@
 
 (in-package :xalcyon)
 
-(defvar *level* 1)
+(defvar *level* 0)
 
 (setf *author* "David T. O'Toole <dto@ioforms.org> http://dto.github.com/notebook/")
 (setf *screen-width* 860)
@@ -69,9 +69,9 @@
   (defresource 
       (:name "vox-energy" :type :sample :file "vox-energy.wav" :properties (:volume 180))
       (:name "vox-hazard" :type :sample :file "vox-hazard.wav" :properties (:volume 180))
-      (:name "vox-message" :type :sample :file "vox-message.wav" :properties (:volume 180))
-      (:name "vox-radiation" :type :sample :file "vox-radiation.wav" :properties (:volume 180))
-      (:name "vox-repair" :type :sample :file "vox-repair.wav" :properties (:volume 180))
+    (:name "vox-message" :type :sample :file "vox-message.wav" :properties (:volume 180))
+    (:name "vox-radiation" :type :sample :file "vox-radiation.wav" :properties (:volume 180))
+    (:name "vox-repair" :type :sample :file "vox-repair.wav" :properties (:volume 180))
     (:name "vox-restored" :type :sample :file "vox-restored.wav" :properties (:volume 180))
       (:name "vox-shield-pickup" :type :sample :file "vox-shield-pickup.wav" :properties (:volume 180))
       (:name "vox-bomb-pickup" :type :sample :file "vox-bomb-pickup.wav" :properties (:volume 180))
@@ -79,12 +79,41 @@
       (:name "vox-shutdown" :type :sample :file "vox-shutdown.wav" :properties (:volume 180))
       (:name "vox-you-lose" :type :sample :file "vox-you-lose.wav" :properties (:volume 180))
       (:name "vox-winning" :type :sample :file "vox-winning.wav" :properties (:volume 180))
-      (:name "vox-shield-warning" :type :sample :file "vox-shield-warning.wav" :properties (:volume 180))))
+      (:name "vox-shield-warning" :type :sample :file "vox-shield-warning.wav" :properties (:volume 180))
+      (:name "vox-mission-completed" :type :sample :file "vox-mission-completed.wav" :properties (:volume 180))
+      (:name "vox-now-entering" :type :sample :file "vox-now-entering.wav" :properties (:volume 180))
+      (:name "vox-proceed-to" :type :sample :file "vox-proceed-to.wav" :properties (:volume 180))
+      (:name "vox-sector" :type :sample :file "vox-sector.wav" :properties (:volume 180))
+      (:name "vox-virus-detected" :type :sample :file "vox-virus-detected.wav" :properties (:volume 180))))
+
+(defparameter *vox-digits*
+  (defresource
+      (:name "vox-0" :type :sample :file "vox-0.wav" :properties (:volume 180))
+      (:name "vox-1" :type :sample :file "vox-1.wav" :properties (:volume 180))
+    (:name "vox-2" :type :sample :file "vox-2.wav" :properties (:volume 180))
+    (:name "vox-3" :type :sample :file "vox-3.wav" :properties (:volume 180))
+    (:name "vox-4" :type :sample :file "vox-4.wav" :properties (:volume 180))
+    (:name "vox-5" :type :sample :file "vox-5.wav" :properties (:volume 180))
+    (:name "vox-6" :type :sample :file "vox-6.wav" :properties (:volume 180))
+    (:name "vox-7" :type :sample :file "vox-7.wav" :properties (:volume 180))
+    (:name "vox-8" :type :sample :file "vox-8.wav" :properties (:volume 180))
+    (:name "vox-9" :type :sample :file "vox-9.wav" :properties (:volume 180))
+    (:name "vox-10" :type :sample :file "vox-10.wav" :properties (:volume 180))))
+
+(defparameter *vox-letters*
+  (defresource
+      (:name "vox-alpha" :type :sample :file "vox-alpha.wav" :properties (:volume 180))
+      (:name "vox-beta" :type :sample :file "vox-beta.wav" :properties (:volume 180))
+    (:name "vox-gamma" :type :sample :file "vox-gamma.wav" :properties (:volume 180))
+    (:name "vox-delta" :type :sample :file "vox-delta.wav" :properties (:volume 180))
+    (:name "vox-epsilon" :type :sample :file "vox-epsilon.wav" :properties (:volume 180))))
+
+(defparameter *letters* '(:alpha :beta :gamma :delta :epsilon))
 
 (defresource 
     (:name "xplod"
      :type :sample :file "xplod.wav" 
-     :properties (:volume 90)))
+     :properties (:volume 120)))
 
 (defparameter *bounce-sounds*
   (defresource 
@@ -123,7 +152,7 @@
     (:name "beatup" :type :music :file "beatup.ogg")
     (:name "frantix4" :type :music :file "frantix4.ogg")
     (:name "defmacron" :type :music :file "defmacron.ogg")
-    (:name "phong" :type :music :file "phong.ogg")
+    (:name "phong" :type :music :file "phong.ogg" :properties (:volume 100))
     (:name "wraparound" :type :music :file "wraparound.ogg" :properties (:volume 200))))
 
 (defparameter *ambient-tracks*
@@ -134,15 +163,14 @@
     (:name "xmrio" :type :music :file "xmrio.ogg")
     (:name "rappy" :type :music :file "rappy.ogg")
     (:name "theme3" :type :music :file "theme3.ogg")
-    (:name "suspiria-synthesis" :type :music :file "suspiria-synthesis.ogg")
+    (:name "xalcyon" :type :music :file "xalcyon.ogg")
     (:name "vedex" :type :music :file "vedex.ogg")
     (:name "ompula" :type :music :file "ompula.ogg")))
     
 (defparameter *special-tracks*
   (defresource 
+    (:name "suspiria-synthesis" :type :music :file "suspiria-synthesis.ogg")
       (:name "vixon" :type :music :file "vixon.ogg")
-      (:name "vixon" :type :music :file "vixon.ogg")
-    (:name "xalcyon" :type :music :file "xalcyon.ogg")
       (:name "nexttime" :type :music :file "nexttime.ogg")))
 
 (defparameter *soundtrack*
@@ -154,7 +182,8 @@
   '((:dec :background "DarkSlateBlue" :brick "SlateBlue" :brick2 "hot pink" :wall "Black")
     (:tandy :background "gray20" :brick "red" :brick2 "gray30" :wall "gray20")
     (:vax :background "gray20" :brick "gray50" :brick2 "gray30" :wall "gray20")
-;    (:command :background "DarkOrange" :brick "gold" :brick2 "gray40" :wall "gray20")
+    (:command :background "black" :brick "gold" :brick2 "gray40" :wall "gray20")
+    (:surround :background "DarkOliveGreen" :brick "GreenYellow" :brick2 "gray40" :wall "gray20")
     (:maynard :background "saddle brown" :brick "DarkOrange" :brick2 "gray40" :wall "gray20")
     (:zerk :background "black" :brick "maroon2" :brick2 "cyan" :wall "black")))
 
@@ -206,7 +235,7 @@
 (defun is-barrier (thing)
   (has-tag thing :barrier))
 
-(defparameter *barrier-hp* 12)
+(defparameter *barrier-hp* 14)
 
 (define-block barrier 
   :hp *barrier-hp*
@@ -266,7 +295,7 @@
     ((or (is-robot thing)
 	 (is-trail thing))
      (incf (field-value :chips (player)) %value)
-     (recharge (player) 14)
+     (recharge (player) 20)
      (play-sound self "chip1")
      (destroy self))
     ((is-brick thing) 
@@ -551,14 +580,14 @@
 (define-method fire monitor (direction)
   (multiple-value-bind (x y) (center-point self)
     (drop self (new bullet (heading-to-player self)))
-    (dotimes (n 2)
+    (dotimes (n (level-value 0 1 2 3))
       (drop self (new bullet 
 		      (+ (heading-to-player self) -1.5 (random 3.2))
 		      :timer 100)))))
 
-;;; Carriers
+;;; Biclops
 
-(defresource (:name "carrier" :type :image :file "carrier.png"))
+(defresource (:name "biclops" :type :image :file "biclops.png"))
 
 (defparameter *wreckage-images*
   (defresource
@@ -574,34 +603,38 @@
   :image (random-choose *wreckage-images*))
 
 (define-method update wreckage ()
-  (move-forward self %speed))
+  (move-forward self (level-value 1 1.5 2 2.3 3)))
 
 (define-method collide wreckage (thing)
   (when (is-robot thing)
     (damage thing 1))
   (when (is-brick thing)
+    (make-sparks %x %y 2)
     (destroy self)))
 
-(define-block carrier
-  (tags :initform '(:enemy))
+(defun is-biclops (thing)
+  (has-tag thing :biclops))
+
+(define-block biclops
+  (tags :initform '(:enemy :biclops))
   (direction :initform (random-choose '(:up :down :left :right)))
-  (hp :initform 15)
-  (image :initform "carrier"))
+  (hp :initform 30)
+  (image :initform "biclops"))
 
-(define-method update carrier ()
-  (when (> 550 (distance-to-player self))
-    (percent-of-time 20 
-      (drop self (new glitch) 40 40)))
-  (move-toward self %direction 1))
+(define-method update biclops ()
+  (when (> (level-value 300 400 500) (distance-to-player self))
+    (percent-of-time (level-value 0.5 0.5 1 1 1.5)
+      (drop self (new glitch) 10 2)))
+  (move-toward self %direction (level-value 1 1.8 2.5 3)))
 
-(define-method collide carrier (thing)
+(define-method collide biclops (thing)
   (when (is-robot thing)
     (damage thing 1))
   (unless (is-enemy thing)
     (restore-location self)
     (setf %direction (random-choose '(:up :down)))))
 
-(define-method damage carrier (points)
+(define-method damage biclops (points)
   (decf %hp points)
   (if (plusp %hp)
       (play-sound self (random-choose *whack-sounds*))
@@ -609,11 +642,12 @@
 	(play-sound self "bigboom")
 	(play-sound self "xplod")
 	(multiple-value-bind (x y) (center-point self)
-	  (make-sparks x y 20)
+	  (make-sparks x y 3)
+	  (make-explosion self 4)
 	  (dotimes (n 5)
-	    (drop self (new wreckage) (random 50) (random 100)))
+	    (drop self (new wreckage) (random 30) (random 30)))
 	  (dotimes (n 8)
-	    (drop self (new bullet (random (* 2 pi)) :radius 8) (random 50) (random 100)))
+	    (drop self (new bullet (random (* 2 pi))) (random 50) (random 100)))
 	  (destroy self)))))
 
 ;;; Positronic trail to gather items / block bullets
@@ -724,7 +758,7 @@
     (:name "power" :type :sample :file "power.wav")
     (:name "powerdown" :type :sample :file "powerdown.wav")
     (:name "countdown" :type :sample :file "countdown.wav" :properties (:volume 40))
-    (:name "explode" :type :sample :file "explode.wav"))
+    (:name "explode" :type :sample :file "explode.wav" :properties (:volume 100)))
 
 (define-block bomb :timer 0 :countdown 5 
   :image "bomb4" :target nil
@@ -823,7 +857,9 @@
 	((and (< dist 250) 
 	      (zerop timer))
 	 ;; don't always fire
-	 (percent-of-time 65 (fire self dir))
+	 (percent-of-time 65 
+	   (play-sample "magenta-alert")
+	   (fire self dir))
 	 (aim self (- dir 0.52))
 	 (setf timer 90))
 	;; begin approach after staying still
@@ -857,6 +893,8 @@
   (when (is-robot thing)  
     (play-sample "powerup")
     (play-sample "vox-bomb-pickup")
+    (recharge thing 100)
+    (later 2.2 (play-sound thing "vox-restored"))
     (equip thing :bomb)
     (destroy self)))
 
@@ -866,6 +904,8 @@
   (when (is-robot thing)
     (play-sample "powerup")
     (play-sample "vox-shield-pickup")
+    (recharge thing 100)
+    (later 2.2 (play-sound thing "vox-restored"))
     (equip thing :shield)
     (destroy self)))
 
@@ -920,6 +960,18 @@
     (when (zerop speech-timer)
       (play-sample sample)
       (setf speech-timer 280))))
+
+(define-method speak-symbol robot (thing)
+  (cond 
+    ((typep thing '(integer 0 10))
+     (play-sample (nth thing *vox-digits*)))
+    ((member thing *letters*)
+     (play-sample (nth (position thing *letters*) *vox-letters*)))))
+
+(define-method announce robot (letter &optional (level *level*))
+  (play-sample "vox-sector")
+  (later 1.0 (speak-symbol self letter))
+  (later 2.0 (speak-symbol self level)))
 
 (define-method initialize robot ()
   (initialize%%block self)
@@ -1018,10 +1070,8 @@
 
 (define-method recharge robot (amount)
   (assert (plusp amount))
-  ;; don't recharge while using shields or firing
-  (when (and %ready (null %shields))
-    (setf %energy 
-	  (min 100 (incf %energy amount)))))
+  (setf %energy 
+	(min 100 (incf %energy amount))))
 
 (define-method fire robot (heading)
   (when (and %ready 
@@ -1080,8 +1130,8 @@
 	      (joystick-button-pressed-p :left-trigger))
     (with-fields (dead recharge-timer) self
       (when (zerop recharge-timer)
-	(setf recharge-timer 10)
-	(recharge self 3))
+	(setf recharge-timer 8)
+	(recharge self 3.1))
       (decf recharge-timer))))
 
 (define-method update robot ()
@@ -1113,11 +1163,11 @@
 (define-block base :image "base" :ready nil :timer 70 :tags '(:enemy) :hp 15)
 
 (define-method update base ()
-  (when (< (distance-to-player self) 320)
+  (when (< (distance-to-player self) (level-value 240 280 340 440 500))
     (decf %timer)
     (when (zerop %timer)
       (setf %timer 100)
-      (percent-of-time 14
+      (percent-of-time (level-value 8 12 15 17)
 	(play-sample "vox-radiation")
 	(dotimes (n 3)
 	  (drop self (new glitch))))
@@ -1182,7 +1232,7 @@
 	(turn-right self)))))
 
 (define-method draw-bunker reactor (size0 &optional (monitors 5))
-  (let ((size (+ 6 size0)))
+  (let ((size (+ 4 size0)))
     (let ((gap (+ 3 (random 2))))
       (dotimes (n 4)
 	(draw-wall self (- size gap 2))
@@ -1215,56 +1265,84 @@
 			  (truncate (/ width unit))
 			  (truncate (/ height unit))))))))
 
-(define-method build reactor (&optional (level 1))
-  (setf *theme* (random-theme))
-  (setf %background-color (theme-color :background))
-  (setf %window-scrolling-speed 5)
-  (move-window-to self 0 0)
-  (paste self 
-	 (with-world-prototype self
-	   (wall-around 
-	    (border-around
-	      (with-new-world (draw-base (world) (+ 2 (random 3))))
-	     200))))
-  (shrink-wrap self))
+;;; The five level types
 
-(define-method build-archive reactor ()
-  (setf *theme* (random-theme))
-  (setf %background-color (theme-color :background))
-  (setf %window-scrolling-speed 5)
-  (move-window-to self 0 0)
-  (paste self 
-	 (with-world-prototype self
-	   (wall-around 
-	    (border-around
-	     (stack-horizontally 
-	      (border-around
-	       (with-new-world (draw-bunker (world) (+ 6 (random 4))))
-	       50)
-	      (border-around
-	       (with-new-world (draw-bunker (world) (+ 4 (random 6))))
-	       50))
-	     100))))
-  (shrink-wrap self))
+(defun level-value (&rest args)
+  (if (<= (length args) *level*)
+      (nth (1- (length args)) args)
+      (nth *level* args)))
 
-(define-method build-bombers reactor ()
+(define-method build-theme reactor ()
   (setf *theme* (random-theme))
   (setf %background-color (theme-color :background))
   (setf %window-scrolling-speed 5)
-  (move-window-to self 0 0)
-  (paste self 
-	 (with-world-prototype self
-	   (wall-around 
-	    (border-around
-	     (combine
-	      (with-new-world (draw-bunker (world) (+ 3 (random 6))))
-	      (border-around 
-	       (with-new-world (dotimes (n 3)
-				 (drop (world) (new rook) 
-				       (random (* 2 (unit 5)))
-				       (random (* 2 (unit 5))))))))
-	      200))))
-  (shrink-wrap self))
+  (move-window-to self 0 0))
+
+(define-method build-alpha reactor ()
+  (with-world-prototype self
+    (wall-around 
+     (border-around
+      (stack-horizontally 
+       (border-around
+	(with-new-world (draw-bunker (world) (+ 2 (random 6)) 
+				     (level-value 1 1 2 5 6)))
+	(+ 30 (random 50)))
+       (border-around
+	(with-new-world (draw-bunker (world) (+ 4 (random 6))
+				     (level-value 1 2 4 5 8)))
+	(+ 30 (random 40))))
+      (+ 120 (random 80))))))
+
+(define-method build-beta reactor ()
+  (with-world-prototype self
+    (wall-around 
+     (border-around
+      (with-new-world 
+	(draw-base (world) 
+		   ;; bases smaller as level goes up
+		   (+ 2 (random 2) 
+		      (level-value 5 4 3 2 1))
+		   ;; more bases
+		   (level-value 1 2 3)))
+      (level-value 450 320 270)))))
+
+(define-method build-gamma reactor ()
+  (with-world-prototype self
+    (wall-around 
+     (border-around
+      (combine
+       (with-new-world (draw-bunker (world) (+ 5 (random 6)) 
+				    (level-value 1 1 2 2 3)))
+       (border-around 
+	(with-new-world (dotimes (n (level-value 1 2 2 3 3))
+			  (drop (world) (new rook) 
+				(random (* 2 (unit 5)))
+				(random (* 2 (unit 5))))))
+	100))
+      (level-value 400 360 320)))))
+
+(define-method build-delta reactor ()
+  (with-world-prototype self
+    (wall-around 
+     (border-around
+      (stack-horizontally
+       (border-around
+	(stack-vertically
+	 (with-new-world (draw-bunker (world) (+ 3 (random 2))))
+	 (border-around (with-new-world (draw-bunker (world) (+ 7 (random 3))))
+			(level-value 50 100 30))
+	 (border-around 
+	  (with-new-world (dotimes (n (level-value 1 2 2 3 3))
+			    (drop (world) (new biclops) 
+				  (random (* 2 (unit 5)))
+				  (random (* 2 (unit 5))))))
+	  300))
+	(level-value 300 250 200))
+       (border-around (with-new-world (draw-base self 7 (level-value 0 1 2)))
+		      150))
+      100))))
+
+;;; Adding a HUD to the view
 	       	     
 (define-method draw reactor ()
   ;; heads up display
@@ -1439,7 +1517,7 @@
 (define-block messenger :category :terminal)
 
 (defparameter *messenger-columns* 80)
-(defparameter *messenger-rows* 12)
+(defparameter *messenger-rows* 7)
 
 (define-method layout messenger ()
   (setf %height (+ (* (font-height *font*) (+ *messenger-rows* 1))
@@ -1523,18 +1601,30 @@
     (message "Saving joystick configuration for xalcyon... Done.")
     (message "Press ESCAPE or the 'return to game' button to continue playing.")))
 
-;;; The setup page
+;;; the game screen
+
+(defparameter *xalcyon-copyright-notice*
+  "Xalcyon (version 0.1a) is (C) Copyright 2006-2012 by David T. O'Toole
+<dto@ioforms.org> http://dto.github.com/notebook/ 
+
+This is free software. Program code is distributed under GNU GPLv3;
+audiovisual materials are under Creative Commons license. See the
+included file called `COPYING' for complete license information.
+")
+
+(defvar *game-screen* nil)
+(defvar *setup-screen* nil)
 
 (define-block setup)
 
 (define-method initialize setup ()
   (super%initialize self)
-  (add-block self (new button-config) 110 60))
+  (let ((box (new text (concatenate 'string *xalcyon-copyright-notice*))))
+    (resize-to-scroll box 80 7)
+    (end-of-line box)
+    (add-block self (new list (new button-config) box) 90 30)))
 
 ;;; a widget to flip between the game screen and setup screen
-
-(defvar *game-screen* nil)
-(defvar *setup-screen* nil)
 
 (define-block flipper screen)
 
@@ -1542,6 +1632,7 @@
   (setf *scale-output-to-window* nil)
   (setf %screen *setup-screen*)
   (setf *world* *setup-screen*)
+  (setf (field-value :background-color *setup-screen*) "gray20")
   (setf *message-history* nil)
   (message "Welcome to the joystick configuration screen for Xalcyon.")
   (message "Use your keyboard and mouse with the controls above.")
@@ -1590,14 +1681,21 @@
     (bind-event reactor '(:space) :reset)
     (set-location robot 60 60)
     (setf *game-screen* reactor)
+    (setf *level* (random 5))
     (setf *setup-screen* setup-screen)
-    (with-world reactor
-      (ecase (random 3)
-	(0 (build-bombers reactor))
-	(1 (build-archive reactor))
-	(2 (build reactor))))
+    (let ((letter (random-choose '(:alpha :beta :gamma :delta))))
+      (with-world reactor
+	(build-theme (world))
+	(paste (world)
+	       (ecase letter
+		 (:alpha (build-alpha (world)))
+		 (:beta (build-beta (world)))
+		 (:gamma (build-gamma (world)))
+		 (:delta (build-delta (world)))))
+	(shrink-wrap (world))
+	(announce (get-player (world)) letter)))
     (show-game-screen flipper)
-;    (play-music (random-choose *soundtrack*) :loop t)
+    (play-music (random-choose *soundtrack*) :loop t)
     (setf *blocks* (list flipper))))
 
 (define-method reset reactor ()
