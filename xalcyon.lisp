@@ -67,7 +67,7 @@
 
 (defparameter *vox-sounds*
   (defresource 
-      (:name "robovoxx" :type :sample :file "robovoxx.wav" :properties (:volume 120))
+      (:name "robovoxx" :type :sample :file "robovoxx.wav" :properties (:volume 130))
       (:name "vox-energy" :type :sample :file "vox-energy.wav" :properties (:volume 180))
       (:name "vox-hazard" :type :sample :file "vox-hazard.wav" :properties (:volume 180))
     (:name "vox-message" :type :sample :file "vox-message.wav" :properties (:volume 180))
@@ -527,6 +527,10 @@
 (define-method stop-fleeing monitor ()
   (setf %fleeing nil))
 
+(defresource (:name "magenta-alert"
+	      :type :sample :file "magenta-alert.wav" 
+	      :properties (:volume 60)))
+
 (define-method hunt monitor ()
   (let ((dist (distance-to-player self)))
     ;; hunt for player
@@ -539,9 +543,7 @@
 	    (fire self (heading-to-player self))
 	    (setf %fleeing t)
 	    (later 1.4 (stop-fleeing self))
-	    (play-sound self (defresource :name "magenta-alert"
-					  :type :sample :file "magenta-alert.wav" 
-					  :properties (:volume 60)))))
+	    (play-sound self "magenta-alert")))
 	;; patrol
 	(progn (percent-of-time 2 (choose-new-direction self))
 	       (move-toward self %direction 2)))))
@@ -619,7 +621,7 @@
 (define-block biclops
   (tags :initform '(:enemy :biclops))
   (direction :initform (random-choose '(:up :down :left :right)))
-  (hp :initform 30)
+  (hp :initform 20)
   (image :initform "biclops"))
 
 (define-method update biclops ()
@@ -633,7 +635,7 @@
     (damage thing 1))
   (unless (is-enemy thing)
     (restore-location self)
-    (setf %direction (random-choose '(:up :down)))))
+    (setf %direction (random-choose '(:up :down :left :right)))))
 
 (define-method damage biclops (points)
   (decf %hp points)
@@ -644,7 +646,7 @@
 	(play-sound self "xplod")
 	(multiple-value-bind (x y) (center-point self)
 	  (make-sparks x y 3)
-	  (make-explosion self 4)
+	  (percent-of-time (level-value 10 20 30) (make-explosion self 4))
 	  (dotimes (n 5)
 	    (drop self (new wreckage) (random 30) (random 30)))
 	  (dotimes (n 8)
@@ -870,7 +872,9 @@
 	;; run away fast
 	((and (< dist 420) (plusp timer))
 	 (aim self (- %heading 0.03))
-	 (percent-of-time 2 (drop self (new bullet (heading-to-player self))))
+	 (percent-of-time (level-value 0 2 2.5) 
+	   (play-sample "magenta-alert")
+	   (drop self (new bullet (heading-to-player self))))
 	 (move-forward self 3))
 	;; otherwise do nothing
 	))))
@@ -1164,12 +1168,12 @@
 (define-block base :image "base" :ready nil :timer 70 :tags '(:enemy) :hp 15)
 
 (define-method update base ()
-  (when (< (distance-to-player self) (level-value 240 280 340 440 500))
+  (when (< (distance-to-player self) (level-value 280 340 400))
     (decf %timer)
     (when (zerop %timer)
-      (setf %timer 100)
-      (percent-of-time (level-value 8 12 15 17)
-	(play-sample "vox-radiation")
+      (setf %timer (level-value 100 100 130 150))
+      (percent-of-time 8
+	(percent-of-time 10 (play-sample "vox-radiation"))
 	(dotimes (n 3)
 	  (drop self (new glitch))))
       (drop self (new monitor)))))
@@ -1219,7 +1223,7 @@
     (turn-right self)))
 
 (define-method draw-base reactor (size0 &optional (bases 1))
-  (let ((size (+ 8 size0)))
+  (let ((size (+ 6 size0)))
     (dotimes (n bases)
       (drop self (new base)
 	    (unit (+ 2 (random (- size 2))))
@@ -1304,7 +1308,7 @@
 		   (+ 2 (random 2) 
 		      (level-value 5 4 3 2 1))
 		   ;; more bases
-		   (level-value 1 2 3)))
+		   (level-value 1 2 2 3)))
       (level-value 450 320 270)))))
 
 (define-method build-gamma reactor ()
@@ -1323,6 +1327,7 @@
       (level-value 400 360 320)))))
 
 (define-method build-delta reactor ()
+  (setf %quadtree-depth 9)
   (with-world-prototype self
     (wall-around 
      (border-around
@@ -1330,16 +1335,16 @@
        (border-around
 	(stack-vertically
 	 (with-new-world (draw-bunker (world) (+ 3 (random 2))))
-	 (border-around (with-new-world (draw-bunker (world) (+ 7 (random 3))))
-			(level-value 50 100 30))
+	 (border-around (with-new-world (draw-bunker (world) (+ 3 (random 4))))
+			(level-value 30 50 70))
 	 (border-around 
 	  (with-new-world (dotimes (n (level-value 0 1 2 3))
 			    (drop (world) (new biclops) 
 				  (random (* 2 (unit 5)))
 				  (random (* 2 (unit 5))))))
-	  300))
+	  150))
 	(level-value 150 200))
-       (border-around (with-new-world (draw-base self 7 (level-value 0 1 2)))
+       (border-around (with-new-world (draw-base self 7 (level-value 1 1 2 3 4)))
 		      80))
       80))))
 
