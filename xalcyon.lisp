@@ -152,8 +152,7 @@
   (defresource 
     (:name "beatup" :type :music :file "beatup.ogg")
     (:name "frantix4" :type :music :file "frantix4.ogg")
-    (:name "defmacron" :type :music :file "defmacron.ogg")
-    (:name "phong" :type :music :file "phong.ogg" :properties (:volume 100))
+    (:name "melcrov4" :type :music :file "melcrov4.ogg")
     (:name "wraparound" :type :music :file "wraparound.ogg" :properties (:volume 200))))
 
 (defparameter *ambient-tracks*
@@ -161,6 +160,7 @@
     (:name "remembering-xalcyon" :type :music :file "remembering-xalcyon.ogg")
     (:name "xioforms" :type :music :file "xioforms.ogg")
     (:name "xiomacs" :type :music :file "xiomacs.ogg")
+    (:name "phong" :type :music :file "phong.ogg" :properties (:volume 50))
     (:name "xmrio" :type :music :file "xmrio.ogg")
     (:name "rappy" :type :music :file "rappy.ogg")
     (:name "theme3" :type :music :file "theme3.ogg")

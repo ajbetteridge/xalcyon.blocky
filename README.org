@@ -1,6 +1,6 @@
 * Video 
 
-Check out a [[http://ompldr.org/vY201bA/xalcyon-beta.mp4][video]] of XALCYON.
+Check out a [[http://ompldr.org/vY3FqZg/xalcyon-beta-promo.mp4][video]] of XALCYON.
 
 * Download
 
@@ -9,14 +9,13 @@ Downloads for various platforms are located on [[https://github.com/dto/xalcyon.
 * Play 
 
 If you are a Windows user, unzip the XALCYON-WIN32.ZIP file and look
-for XALCYON.EXE in the resulting folder. You may also need to edit
-BLOCKY-INIT.LISP to set up your joystick buttons/axes. (Sorry, I will
-have a proper button config screen soon.)
+for XALCYON.EXE in the resulting folder. You can configure your
+joystick by pressing F1 to go to the config screen.
 
 Linux users: The file XALCYON.APP is the 32-bit GNU/Linux executable
 program. You will need to have installed the SDL libraries.  Please
 see the [[https://github.com/dto/blocky/blob/master/INSTALL][installation instructions]] for Blocky, and also
-[[https://github.com/dto/blocky/blob/master/blocky-init.lisp][blocky-init.lisp]] for info on how to configure the joystick.
+[[https://github.com/dto/blocky/blob/master/blocky-init.lisp][blocky-init.lisp]] for info on how to configure other settings.
 
 * About 
 
@@ -61,14 +60,19 @@ there are enemies that can fire bombs at you too.
 a spread of bullets before dashing away from the player. Highly
 dangerous in groups. They turn red when they're badly damaged.
 
-Much more to come...q
+Much more to come...
 
-* TODO level builder functions accept one parameter, an integer expressing difficulty level (i.e. level 1 of the game, level 2, etc, not "easy hard medium")
-
-* TODO new enemy and/or new item
-* TODO more themes 
-* TODO radiation cloud world
-* TODO exit that opens to next level when completed
+* TODO special sound/flash for "ineffective" shots
+* TODO XALCYON is an undiscovered letter symbol of great power
+* TODO have the aliens say things with little icons/sounds
+* TODO [#B] line-of-sight
+* TODO [#A] fix border-around so that size arg comes first, then &rest worlds
+* TODO [#A] exit at origin that opens to next level when completed, "return to origin" normally hidden <<< landing area with cool opening animation/sound
+* TODO [#B] radiation cloud world
+* TODO [#B] new enemy and/or new item
+* TODO [#B] onscreen event-responsive particle glitch grids, really quick transient effects with transparency mismunch
+* TODO [#B] more themes 
+* TODO [#B] investigate http://angg.twu.net/ICON/tron.icn
 * TODO basic in-game help screen (doubles as pause feature) on F1, any joystick button to cancel
 ** TODO archive: a few monitors in a very simple berzerky environment.
 ** TODO outpost: open area with 1 difficult base, spewing monitors and radiation hazard
