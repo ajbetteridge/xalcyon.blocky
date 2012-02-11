@@ -59,9 +59,6 @@ there are enemies that can fire bombs at you too.
 "Monitors" are orange robotic drones that patrol the fortress, firing
 a spread of bullets before dashing away from the player. Highly
 dangerous in groups. They turn red when they're badly damaged.
-
-Much more to come...
-
 * TODO special sound/flash for "ineffective" shots
 * TODO XALCYON is an undiscovered letter symbol of great power
 * TODO have the aliens say things with little icons/sounds
