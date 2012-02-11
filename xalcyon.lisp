@@ -152,7 +152,7 @@
   (defresource 
     (:name "beatup" :type :music :file "beatup.ogg")
     (:name "frantix4" :type :music :file "frantix4.ogg")
-    (:name "melcrov4" :type :music :file "melcrov4.ogg")
+    (:name "melcrov4" :type :music :file "melcrov4.ogg"  :properties (:volume 80))
     (:name "wraparound" :type :music :file "wraparound.ogg" :properties (:volume 200))))
 
 (defparameter *ambient-tracks*
