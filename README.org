@@ -60,21 +60,32 @@ there are enemies that can fire bombs at you too.
 a spread of bullets before dashing away from the player. Highly
 dangerous in groups. They turn red when they're badly damaged.
 
-* TODO don't start quadtree searches on :passive collision-type objects
-* TODO player should glide along wall not stick
-* TODO Profile and optimize
-* TODO optimize quadtree.lisp?
-* TODO optimize draw-wall to make single rectangle per call 
-* TODO enemies who camouflage themselves as walls
-* TODO special sound/flash for "ineffective" shots
-* TODO XALCYON is an undiscovered letter symbol of great power
-* TODO have the aliens say things with little icons/sounds
+* TODO only draw onscreen objects
+* TODO fast moving electric death walls too!
+* TODO debug wall glide
+* TODO hot-gas-spewing vents
+* TODO new weapon/enemy boss thing with personality
+* TODO weapon is an auto-firing pod that pops out, uses energy while it fires in a circle, then comes back.
+* TODO or acquire a trail
 * TODO [#B] line-of-sight
 * TODO [#A] fix border-around so that size arg comes first, then &rest worlds
 * TODO [#A] exit at origin that opens to next level when completed, "return to origin" normally hidden <<< landing area with cool opening animation/sound
 * TODO [#B] radiation cloud world
 * TODO [#B] new enemy and/or new item
 * TODO [#B] onscreen event-responsive particle glitch grids, really quick transient effects with transparency mismunch
+
+* TODO [#C] enemy whose bullet knocks you backward possibly into other stuff
+* DONE [#A] player should glide along wall not stick
+  CLOSED: [2012-02-12 Sun 23:17]
+* TODO Profile and optimize!
+* TODO optimize quadtree.lisp?
+* DONE optimize draw-wall to make single rectangle per call 
+  CLOSED: [2012-02-12 Sun 23:17]
+* TODO enemies who camouflage themselves as walls
+* TODO special sound/flash for "ineffective" shots
+* TODO XALCYON is an undiscovered letter symbol of great power
+* TODO final level is Xalcyon Infinity
+* TODO have the aliens say things with little icons/sounds
 * TODO [#B] more themes 
 * TODO [#B] investigate http://angg.twu.net/ICON/tron.icn
 * TODO basic in-game help screen (doubles as pause feature) on F1, any joystick button to cancel
@@ -251,5 +262,7 @@ Player speed should be 1 pixel when shift is held (use in danger areas.)
 
 
 
+* DONE don't start quadtree searches on :passive collision-type objects
+  CLOSED: [2012-02-12 Sun 22:26]
 
 

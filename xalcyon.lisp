@@ -28,9 +28,9 @@
 (defvar *level* 0)
 
 (setf *author* "David T. O'Toole <dto@ioforms.org> http://dto.github.com/notebook/")
-(setf *screen-width* 860)
+(setf *screen-width* 890)
 (setf *screen-height* 530)
-(setf *nominal-screen-width* 860)
+(setf *nominal-screen-width* 890)
 (setf *nominal-screen-height* 530)
 (setf *resizable* t)
 (setf *window-title* "Xalcyon")
@@ -114,7 +114,7 @@
 (defresource 
     (:name "xplod"
      :type :sample :file "xplod.wav" 
-     :properties (:volume 120)))
+     :properties (:volume 90)))
 
 (defparameter *bounce-sounds*
   (defresource 
@@ -151,8 +151,7 @@
 (defparameter *dance-tracks* 
   (defresource 
     (:name "beatup" :type :music :file "beatup.ogg")
-    (:name "frantix4" :type :music :file "frantix4.ogg")
-    (:name "melcrov4" :type :music :file "melcrov4.ogg"  :properties (:volume 80))
+    (:name "melcrov8r" :type :music :file "melcrov8r.ogg"  :properties (:volume 80))
     (:name "wraparound" :type :music :file "wraparound.ogg" :properties (:volume 200))))
 
 (defparameter *ambient-tracks*
@@ -163,6 +162,7 @@
     (:name "phong" :type :music :file "phong.ogg" :properties (:volume 50))
     (:name "xmrio" :type :music :file "xmrio.ogg")
     (:name "rappy" :type :music :file "rappy.ogg")
+    (:name "invec" :type :music :file "invec.ogg")
     (:name "theme3" :type :music :file "theme3.ogg")
     (:name "xalcyon" :type :music :file "xalcyon.ogg")
     (:name "vedex" :type :music :file "vedex.ogg")
@@ -227,13 +227,157 @@
 (define-method draw brick ()
   (draw-box %x %y %width %height :color (theme-color %part)))
 
+;;; Electric death paddles!
+
+(define-block paddle :tags '(:brick) :phase (random pi) :height 12 :width 100 :heading 0.0)
+
+(define-method draw paddle ()
+  (let ((index (truncate (* 100 (sin %phase)))))
+    (when (< (distance-to-player self) 400)
+      (draw-box 0 (+ %y 5) 10000 2
+		:color (random-choose '("red" "yellow" "magenta"))))
+    (draw-box %x %y %width %height :color (percent-gray index))))
+
+(define-method update paddle ()
+  (let ((speed
+	  (if (< (distance-to-player self)
+		 380)
+	      (level-value 9 11 13 13)
+	      (level-value 5 6 7 8))))
+    (incf %phase (/ speed 100))
+    (move-forward self speed)))
+
+(define-method collide paddle (thing)
+  (cond 
+    ((is-brick thing)
+     (restore-location self)
+     (setf %heading (- %heading pi)))
+    ((is-robot thing)
+     (damage thing 1))))
+
+;;; Deadly burning gas clouds
+
+(defparameter *vent-sounds*
+  (defresource 
+      (:name "geiger1" :type :sample :file "geiger1.wav" :properties (:volume 40))
+      (:name "geiger2" :type :sample :file "geiger2.wav" :properties (:volume 40))
+    (:name "geiger3" :type :sample :file "geiger3.wav" :properties (:volume 40))
+    (:name "geiger4" :type :sample :file "geiger4.wav" :properties (:volume 40))))
+
+(defparameter *vent-images*
+  (defresource 
+      (:name "vent" :type :image :file "vent.png")
+      (:name "vent2" :type :image :file "vent2.png")
+      (:name "vent3" :type :image :file "vent3.png")
+      (:name "vent4" :type :image :file "vent4.png")
+      (:name "vent5" :type :image :file "vent5.png")))
+
+(define-block cloud 
+  :timer 300
+  :collision-type :passive
+  :tags '(:cloud)
+  :image "vent")
+
+(define-method draw cloud ()
+  (with-field-values (x y width height image) self
+    (let ((jitter (random 10)))
+      (when (> jitter 7)
+	(incf %heading (random-choose '(-0.3 0.2))))
+      (set-blending-mode :additive2)
+      (draw-image image
+		  (- x jitter)
+		  (- y jitter)
+		  :width (+ width jitter)
+		  :height (+ height jitter)
+		  :opacity 1)
+      (dotimes (n 4) 
+	(draw-box (+ x -5 (random height))
+		  (+ y -5 (random width))
+		  (+ 5 (random 8))
+		  (+ 5 (random 8))
+		  :color (random-choose '("white" "magenta"))
+		  :alpha 0.7)))))
+
+(define-method initialize cloud (&optional (size (+ 16 (random 32))))
+  (super%initialize self)
+  (resize self size size))
+
+(define-method update cloud ()
+  (move-forward self 1)
+  (decf %timer)
+  (when (evenp %timer)
+    (setf %image (random-choose *vent-images*)))
+  (when (< (distance-to-player self) 300)
+    (percent-of-time 4 (play-sample (random-choose *vent-sounds*))))
+  (unless (plusp %timer)
+    (destroy self)))
+
+(defparameter *vent-hole-images*
+  (defresource 
+      (:name "vent-hole1" :type :image :file "vent-hole1.png")
+      (:name "vent-hole2" :type :image :file "vent-hole2.png")
+      (:name "vent-hole3" :type :image :file "vent-hole3.png")))
+
+(define-block vent 
+  :image "vent-hole1" :tags '(:enemy :vent) 
+  :hp 22
+  :timer 0)
+
+(define-method update vent ()
+  (with-fields (timer) self 
+    (when (plusp timer)
+      (percent-of-time 30 
+	(play-sample "magenta-alert")
+	(drop self (new bullet (heading-to-player self)) 20 20))
+      (decf timer))
+    (when (zerop timer)
+      (percent-of-time 10
+	(when (< (distance-to-player self) 350)
+	  (setf timer 45))))
+    (percent-of-time 2.35
+      (percent-of-time 4 (drop self (new "XALCYON:ROOK") 140 140))
+      (drop self (new "XALCYON:CLOUD") 40 40))))
+
+(define-method damage vent (points)
+  (play-sample (random-choose *corruption-sounds*))
+  (decf %hp)
+  (unless (plusp %hp)
+    (make-explosion self)
+    (play-sample "bigboom")
+    (drop-chips self :value-multiplier 32)
+    (destroy self)))
+
+(define-method draw vent ()
+  (with-field-values (x y height width) self
+    (draw-box x y width height :color "black")
+    (let ((border (+ 5 (random 20))))
+      (draw-box (+ x border)
+		(+ y border)
+	        (- width (* 2 border))
+		(- height (* 2 border))
+		:color 
+		(if (< %hp 8)
+		    (random-choose '("yellow" "orange" "white"))
+		    (random-choose '("yellow" "orange" "magenta" "HotPink" "red"))))
+      (set-blending-mode :additive2)
+      (draw-image (random-choose *vent-hole-images*) 
+		  %x %y
+		  :opacity 0.4))))
+
+(define-method collide vent (thing)
+  (if (is-brick thing)
+      (destroy self)
+      (when (is-player-bullet thing)
+	(damage self 1)
+	(play-sample (random-choose *whack-sounds*)))))
+	  
 ;;; Breakable block barriers that pass enemies and enemy bullets but
 ;;; not player bullets or the player
 
 (defun is-barrier (thing)
   (has-tag thing :barrier))
 
-(defparameter *barrier-hp* 14)
+(defparameter *barrier-hp* 12)
 
 (define-block barrier 
   :hp *barrier-hp*
@@ -256,7 +400,6 @@
   (make-sparks %x %y 1)
   (play-sample "shield-bounce")
   (when (not (plusp %hp))
-;    (make-sparks %x %y)
     (destroy self)))
 
 (define-method bounding-box barrier ()
@@ -368,6 +511,9 @@
 
 (define-method collide bullet (thing)
   (cond 
+    ;; let bullets pass through clouds
+    ((has-tag thing :cloud)
+     nil)
     ;; let enemy bullets pass through barriers
     ((and (is-barrier thing)
 	  (is-enemy-bullet self))
@@ -618,12 +764,12 @@
 (define-block biclops
   (tags :initform '(:enemy :biclops))
   (direction :initform (random-choose '(:up :down :left :right)))
-  (hp :initform 20)
+  (hp :initform 17)
   (image :initform "biclops"))
 
 (define-method update biclops ()
   (when (> (level-value 300 400 500) (distance-to-player self))
-    (percent-of-time (level-value 1 1 1.5 1.5 2)
+    (percent-of-time (level-value 0.8 1 1.2 1.3)
       (drop self (new glitch) 10 2)))
   (move-toward self %direction (level-value 1 1.8 2.5 3)))
 
@@ -754,7 +900,7 @@
     (:name "shield-ammo" :type :image :file "shield-ammo.png")
     (:name "energy-ammo" :type :image :file "energy-ammo.png")
     (:name "powerup" :type :sample :file "powerup.wav")
-    (:name "bombs-away" :type :sample :file "bombs-away.wav")
+    (:name "bombs-away" :type :sample :file "bombs-away.wav" :properties (:volume 70))
     (:name "power" :type :sample :file "power.wav")
     (:name "powerdown" :type :sample :file "powerdown.wav")
     (:name "countdown" :type :sample :file "countdown.wav" :properties (:volume 40))
@@ -762,7 +908,7 @@
 
 (define-block bomb :timer 0 :countdown 5 
   :image "bomb4" :target nil
-  :stopped nil :speed 3.7
+  :stopped nil :speed 4
   :origin nil)
 
 (define-method explode bomb ()
@@ -785,16 +931,18 @@
 	  (is-enemy %origin)
 	  (is-enemy thing))
      nil)
-    ;; enemy bombs stop at player
+    ;; enemy bombs stop at player and trail
     ((and %origin 
 	  (is-enemy %origin)
-	  (is-robot thing))
+	  (or (is-robot thing)
+	      (is-trail thing)))
      (setf %stopped t))
     ;; stick to enemies
     ((is-enemy thing)
      (setf %target thing))
     ;; stop at walls
-    ((is-brick thing)
+    ((or (is-brick thing)
+	 (is-barrier thing))
      (restore-location self))))
 
 (define-method update bomb () 
@@ -848,13 +996,12 @@
 
 (define-method update rook ()
   (with-fields (timer) self
-    (when (plusp timer)
-      (decf timer))
+    (setf timer (max 0 (1- timer))) 
     (let ((dir (heading-to-player self))
 	  (dist (distance-to-player self)))
       (cond 
 	;; shoot bomb then set flag to run away
-	((and (< dist 250) 
+	((and (< dist 280) 
 	      (zerop timer))
 	 ;; don't always fire
 	 (percent-of-time 65 
@@ -863,15 +1010,15 @@
 	 (aim self (- dir 0.52))
 	 (setf timer 90))
 	;; begin approach after staying still
-	((and (< dist 420) (zerop timer))
+	((and (< dist 570) (zerop timer))
 	 (aim self dir)
 	 (move-forward self 2))
 	;; run away fast
 	((and (< dist 420) (plusp timer))
 	 (aim self (- %heading 0.03))
-	 (percent-of-time (level-value 0 2 2.5) 
+	 (percent-of-time (level-value 0 1.0 1.3) 
 	   (play-sample "magenta-alert")
-	   (drop self (new bullet (heading-to-player self))))
+	   (drop self (new bullet (heading-to-player self)) 14 14))
 	 (move-forward self 3))
 	;; otherwise do nothing
 	))))
@@ -896,7 +1043,6 @@
     (play-sample "powerup")
     (play-sample "vox-bomb-pickup")
     (recharge thing 100)
-    (later 2.2 (play-sound thing "vox-restored"))
     (equip thing :bomb)
     (destroy self)))
 
@@ -907,7 +1053,6 @@
     (play-sample "powerup")
     (play-sample "vox-shield-pickup")
     (recharge thing 100)
-    (later 2.2 (play-sound thing "vox-restored"))
     (equip thing :shield)
     (destroy self)))
 
@@ -920,7 +1065,7 @@
     (destroy self)))
 
 (defun random-powerup ()
-  (clone (random-choose '("XALCYON:ENERGY-AMMO" "XALCYON:ENERGY-AMMO" "XALCYON:BOMB-AMMO" "XALCYON:SHIELD-AMMO"))))
+  (clone (random-choose '("XALCYON:ENERGY-AMMO" "XALCYON:BOMB-AMMO" "XALCYON:SHIELD-AMMO"))))
 
 ;;; The player
 
@@ -972,8 +1117,10 @@
 
 (define-method announce robot (letter &optional (level *level*))
   (play-sample "vox-sector")
-  (later 1.0 (speak-symbol self letter))
-  (later 2.0 (speak-symbol self level)))
+      (later 1.0 (speak-symbol self letter))
+  (if (eq :epsilon letter)
+      (later 2.5 (speak-symbol self level))
+      (later 2.0 (speak-symbol self level))))
 
 (define-method initialize robot ()
   (initialize%%block self)
@@ -1079,7 +1226,7 @@
   (when (and %ready 
 	     (not %dead) 
 	     (> %energy 2))
-    (charge self 1.2)
+    (charge self 1.0)
     (setf %ready nil)
     (later 8 (reload self))
     (play-sound self "zap")
@@ -1108,19 +1255,20 @@
 
 (define-method collide robot (thing)
   (cond
+    ((has-tag thing :cloud)
+     (damage self 1))
     ((is-enemy thing)
      (damage self 1))
     ((is-barrier thing)
      (damage self 1))
     ((and (is-brick thing))
-     (when (null %glide-heading)
-       (restore-location self))
-     ;; possibly glide along wall
-     (setf %glide-heading 
-	   (+ (round %heading (/ pi 2))
-	      (random-choose '(0.2 -0.2)))))
-	  
-    (t (setf %glide-heading nil))))
+       (restore-location self))))
+     ;;   (setf %glide-heading (round %heading (/ pi 2))))
+     ;; ;; possibly glide along wall
+     ;; (incf %glide-heading
+     ;; 	   (if (< %x (field-value :x thing))
+     ;; 	       0.2 -0.2)))
+    ;; (t (setf %glide-heading nil))))
 
 (define-method aim robot (angle)
   (setf %heading angle))
@@ -1154,7 +1302,7 @@
 	(aim self heading)
 	;; possibly glide along wall
 	(move-toward-heading self (or %glide-heading heading) 3.5)
-	(drop-trail-maybe self)
+;	(drop-trail-maybe self)
 	))
     (if (right-analog-stick-pressed-p)
 	(progn (aim self (right-analog-stick-heading))
@@ -1216,13 +1364,14 @@
 	(resize brick *wall-thickness* *wall-thickness*)
 	(move-forward self (unit))))
     ;; now replace them with one brick
-    (multiple-value-bind (top left right bottom)
-	(find-bounding-box bricks)
-      (mapc #'destroy bricks)
-      (let ((big-brick (new brick)))
-	(drop self big-brick)
-	(move-to big-brick left top)
-	(resize big-brick (- right left) (- bottom top))))))
+    (when bricks
+      (multiple-value-bind (top left right bottom)
+	  (find-bounding-box bricks)
+	(mapc #'destroy bricks)
+	(let ((big-brick (new brick)))
+	  (drop self big-brick)
+	  (move-to big-brick left top)
+	  (resize big-brick (- right left) (- bottom top)))))))
   
 (define-method draw-barrier reactor (length)
   (dotimes (n length)
@@ -1251,7 +1400,7 @@
 	(turn-right self)))))
 
 (define-method draw-bunker reactor (size0 &optional (monitors 5))
-  (let ((size (+ 4 size0)))
+  (let ((size (+ 3 size0)))
     (let ((gap (+ 3 (random 2))))
       (dotimes (n 4)
 	(draw-wall self (- size gap 2))
@@ -1305,51 +1454,96 @@
        (border-around
 	(with-new-world (draw-bunker (world) (+ 2 (random 6)) 
 				     (level-value 1 1 2 5 6)))
-	(+ 30 (random 50)))
+	(+ 30 (random 80)))
        (border-around
 	(with-new-world (draw-bunker (world) (+ 4 (random 6))
 				     (level-value 1 2 4 5 8)))
-	(+ 30 (random 40))))
-      (+ 120 (random 80))))))
+	(+ 160 (random 90))))
+      (+ 160 (random 80))))))
 
 (define-method build-beta reactor ()
   (with-world-prototype self
     (wall-around 
      (border-around
-      (with-new-world 
-	(draw-base (world) 
-		   ;; bases smaller as level goes up
-		   (+ 2 (random 2) 
-		      (level-value 5 4 3 2 1))
-		   ;; more bases
-		   (level-value 1 2 2 3)))
+      (stack-vertically 
+       (border-around (with-new-world (drop (world) (new paddle))) 40)
+       (border-around
+	(stack-vertically 
+	 (border-around (with-new-world 
+			  (draw-bunker (world) 7 (level-value 1 1 2 3 4)))
+			80)
+	 (border-around (with-new-world (drop (world) (new paddle))) 40)
+       (border-around
+	(with-new-world 
+	  (dotimes (n (level-value 2 4 6 8))
+	    (add-block (world) (new paddle) (random 1000) (* n 40))))
+	100)
+	 (border-around (with-new-world (draw-base (world) (level-value 10 8 6 5)
+						   (level-value 1 1 2 3 4)))
+			130)
+	 (border-around 
+	  (stack-vertically 
+	   (with-new-world (draw-bunker (world) 7 (level-value 1 1 2 3 4)))
+	   (border-around (with-new-world (drop (world) (new paddle))) 40))
+	   80))
+	150)
+       (border-around
+	(with-new-world 
+	  (dotimes (n (level-value 2 4 6 8))
+	    (add-block (world) (new paddle) (random 1000) (* n 40))))
+	100)
+       (with-new-world 
+	 (draw-base (world) 
+		    ;; bases smaller as level goes up
+		    (+ 7 (random 2) 
+		       (level-value 5 4 3 2 1))
+		    ;; more bases
+		    (level-value 1 2 3 4))))
       (level-value 450 320 270)))))
 
 (define-method build-gamma reactor ()
   (with-world-prototype self
     (wall-around 
      (border-around
-      (combine
-       (with-new-world (draw-bunker (world) (+ 5 (random 6)) 
-				    (level-value 1 1 2 2 3)))
-       (border-around 
-	(with-new-world (dotimes (n (level-value 1 2 2 3 3))
-			  (drop (world) (new rook) 
-				(random (* 2 (unit 5)))
-				(random (* 2 (unit 5))))))
-	100))
-      (level-value 400 360 320)))))
+      (stack-vertically
+       (combine
+	(stack-horizontally
+	 (with-new-world (draw-bunker (world) (+ 5 (random 6)) 
+				      (level-value 2 3 4 5 7)))
+	 (border-around 
+	  (with-new-world (draw-bunker (world) (+ 5 (random 6)) 
+				       (level-value 2 3 4 5 7)))
+	 220))
+	(border-around 
+	 (with-new-world (dotimes (n (level-value 1 2 2 3 3))
+			   (drop (world) (new rook) 
+				 (random (* 2 (unit 5)))
+				 (random (* 2 (unit 5))))))
+	 300))
+       (border-around
+	(stack-horizontally
+	 (border-around 
+	  (with-new-world (draw-bunker (world) (+ 5 (random 6)) 
+				       (level-value 2 3 4 5 7)))
+	  240)
+	 (border-around 
+	  (with-new-world (draw-bunker (world) (+ 5 (random 6)) 
+				       (level-value 2 3 4 5 7)))
+	  240))))
+       (level-value 400 360 320)))))
 
 (define-method build-delta reactor ()
   (setf %quadtree-depth 9)
   (with-world-prototype self
     (wall-around 
      (border-around
-      (stack-horizontally
+
+      (stack-vertically
+
        (border-around
-	(stack-vertically
-	 (with-new-world (draw-bunker (world) (+ 3 (random 2))))
-	 (border-around (with-new-world (draw-bunker (world) (+ 3 (random 4))))
+	(stack-horizontally
+	 (with-new-world (draw-bunker (world) (+ 5 (random 2))))
+	 (border-around (with-new-world (draw-base (world) (+ 5 (random 4))))
 			(level-value 30 50 70))
 	 (border-around 
 	  (with-new-world (dotimes (n (level-value 0 1 2 3))
@@ -1358,9 +1552,48 @@
 				  (random (* 2 (unit 5))))))
 	  150))
 	(level-value 150 200))
-       (border-around (with-new-world (draw-base self 7 (level-value 1 1 2 3 4)))
-		      80))
-      80))))
+
+       (stack-horizontally
+	(border-around (with-new-world (draw-base self 7 (level-value 1 1 2 3 4)))
+		       80)
+	(border-around (with-new-world (draw-bunker self 7 (level-value 1 1 2 3 4)))
+		       130)
+	(border-around (with-new-world (draw-base self 7 (level-value 1 1 2 3 4)))
+		       80)))
+      (+ 100 (random 100))))))
+
+(define-method build-epsilon reactor ()
+  (setf %quadtree-depth 9)
+  (with-world-prototype self
+    (wall-around 
+     (border-around
+      (stack-vertically
+       (border-around
+	(stack-horizontally 
+	 (border-around (with-new-world (draw-bunker self 3 (level-value 1 1 2 2 2)))
+			(+ 80 (random 30)))
+	 (border-around (with-new-world (draw-bunker self 3 (level-value 1 1 2 2 2)))
+			130)
+	 (border-around (with-new-world (draw-base self 7 (level-value 1 1 2 2 2)))
+			(+ 80 (random 50))))
+	(+ 100 (random 150)))
+       (combine
+	(border-around (with-new-world 
+			 (dotimes (n (level-value 0 2 4 5 6))
+			   (add-block (world)
+				      (new vent)
+				      (random 1000) (random 1000))))
+		       100)
+	(combine
+	 (border-around 
+	  (with-new-world (draw-base (world) 10
+				     (level-value 2 2 3 4 4)))
+	  400)
+	 (border-around 
+	  (with-new-world (draw-base (world) 50
+				     (level-value 1 2 2 2 5)))
+	  100))))
+      (level-value 200 140 100 70)))))
 
 ;;; Adding a HUD to the view
 	       	     
@@ -1703,7 +1936,7 @@ included file called `COPYING' for complete license information.
     (setf *game-screen* reactor)
     (setf *level* (random 5))
     (setf *setup-screen* setup-screen)
-    (let ((letter (random-choose '(:alpha :beta :gamma :delta))))
+    (let ((letter (random-choose '(:alpha :beta :gamma :delta :epsilon))))
       (with-world reactor
 	(build-theme (world))
 	(paste (world)
@@ -1711,7 +1944,8 @@ included file called `COPYING' for complete license information.
 		 (:alpha (build-alpha (world)))
 		 (:beta (build-beta (world)))
 		 (:gamma (build-gamma (world)))
-		 (:delta (build-delta (world)))))
+		 (:delta (build-delta (world)))
+		 (:epsilon (build-epsilon (world)))))
 	(shrink-wrap (world))
 	(announce (get-player (world)) letter)))
     (show-game-screen flipper)
