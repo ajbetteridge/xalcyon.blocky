@@ -1148,7 +1148,7 @@
       (let ((heading (left-analog-stick-heading)))
 	(aim self heading)
 	(move-forward self 3.5)
-	;; (drop-trail-maybe self)
+	(drop-trail-maybe self)
 	))
     (if (right-analog-stick-pressed-p)
 	(progn (aim self (right-analog-stick-heading))
