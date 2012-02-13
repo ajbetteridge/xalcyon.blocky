@@ -326,14 +326,14 @@
 (define-method update vent ()
   (with-fields (timer) self 
     (when (plusp timer)
-      (percent-of-time 30 
+      (percent-of-time 25 
 	(play-sample "magenta-alert")
 	(drop self (new bullet (heading-to-player self)) 20 20))
       (decf timer))
     (when (zerop timer)
-      (percent-of-time 10
+      (percent-of-time 3
 	(when (< (distance-to-player self) 350)
-	  (setf timer 45))))
+	  (setf timer 20))))
     (percent-of-time 2.35
       (percent-of-time 4 (drop self (new "XALCYON:ROOK") 140 140))
       (drop self (new "XALCYON:CLOUD") 40 40))))
@@ -361,8 +361,7 @@
 		    (random-choose '("yellow" "orange" "magenta" "HotPink" "red"))))
       (set-blending-mode :additive2)
       (draw-image (random-choose *vent-hole-images*) 
-		  %x %y
-		  :opacity 0.4))))
+		  %x %y))))
 
 (define-method collide vent (thing)
   (if (is-brick thing)
