@@ -1113,9 +1113,14 @@
     ((is-barrier thing)
      (damage self 1))
     ((and (is-brick thing))
-     (restore-location self))))
-    ;; possibly glide along wall
-    ;; (setf %glide-heading (round %heading (/ pi 2))))))
+     (when (null %glide-heading)
+       (restore-location self))
+     ;; possibly glide along wall
+     (setf %glide-heading 
+	   (+ (round %heading (/ pi 2))
+	      (random-choose '(0.2 -0.2)))))
+	  
+    (t (setf %glide-heading nil))))
 
 (define-method aim robot (angle)
   (setf %heading angle))
@@ -1147,7 +1152,8 @@
     (when (left-analog-stick-pressed-p)
       (let ((heading (left-analog-stick-heading)))
 	(aim self heading)
-	(move-forward self 3.5)
+	;; possibly glide along wall
+	(move-toward-heading self (or %glide-heading heading) 3.5)
 	(drop-trail-maybe self)
 	))
     (if (right-analog-stick-pressed-p)
@@ -1155,8 +1161,7 @@
 	       (when (joystick-button-pressed-p :right-trigger)
 		 (fire self (right-analog-stick-heading))))
 	(when (joystick-button-pressed-p :right-trigger)
-	  (fire self %heading)))
-    (setf %glide-heading nil)))
+	  (fire self %heading)))))
 	
 ;;; Stationary bases that generate enemies
 
