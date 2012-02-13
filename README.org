@@ -60,9 +60,11 @@ there are enemies that can fire bombs at you too.
 a spread of bullets before dashing away from the player. Highly
 dangerous in groups. They turn red when they're badly damaged.
 
-* TODO Profile and optimize 
-* TODO optimize draw-wall to make single rectangle per call 
 * TODO don't start quadtree searches on :passive collision-type objects
+* TODO player should glide along wall not stick
+* TODO Profile and optimize
+* TODO optimize quadtree.lisp?
+* TODO optimize draw-wall to make single rectangle per call 
 * TODO enemies who camouflage themselves as walls
 * TODO special sound/flash for "ineffective" shots
 * TODO XALCYON is an undiscovered letter symbol of great power

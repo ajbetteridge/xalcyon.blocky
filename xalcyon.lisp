@@ -199,6 +199,7 @@
 (define-block brick 
   :tags '(:brick)
   :part :brick
+  :collision-type :passive
   :color (theme-color))
 
 (define-method bounding-box brick ()
@@ -225,10 +226,6 @@
 
 (define-method draw brick ()
   (draw-box %x %y %width %height :color (theme-color %part)))
-
-;; (define-method collide brick (thing)
-;;   (when (is-brick thing)
-;;     (message "brick collision ~S" (gensym))))
 
 ;;; Breakable block barriers that pass enemies and enemy bullets but
 ;;; not player bullets or the player
@@ -1204,11 +1201,23 @@
   (* units *wall-thickness*))
 
 (define-method draw-wall reactor (length)
-  (dotimes (n length)
-    (let ((brick (new brick)))
-      (drop self brick)
-      (resize brick *wall-thickness* *wall-thickness*)
-      (move-forward self (unit)))))
+  (let (bricks)
+    ;; a lazy approach.
+    ;; lay down some bricks to measure
+    (dotimes (n length)
+      (let ((brick (new brick)))
+	(drop self brick)
+	(push brick bricks)
+	(resize brick *wall-thickness* *wall-thickness*)
+	(move-forward self (unit))))
+    ;; now replace them with one brick
+    (multiple-value-bind (top left right bottom)
+	(find-bounding-box bricks)
+      (mapc #'destroy bricks)
+      (let ((big-brick (new brick)))
+	(drop self big-brick)
+	(move-to big-brick left top)
+	(resize big-brick (- right left) (- bottom top))))))
   
 (define-method draw-barrier reactor (length)
   (dotimes (n length)
