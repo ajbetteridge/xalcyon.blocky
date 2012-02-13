@@ -1938,7 +1938,7 @@ included file called `COPYING' for complete license information.
     (setf *game-screen* reactor)
     (setf *level* (random 5))
     (setf *setup-screen* setup-screen)
-    (let ((letter :beta));(random-choose '(:alpha :beta :gamma :delta :epsilon))))
+    (let ((letter (random-choose '(:alpha :beta :gamma :delta :epsilon))))
       (with-world reactor
 	(build-theme (world))
 	(paste (world)
