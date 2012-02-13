@@ -229,7 +229,11 @@
 
 ;;; Electric death paddles!
 
-(define-block paddle :tags '(:brick) :phase (random pi) :height 12 :width 100 :heading 0.0)
+(define-block paddle :tags '(:paddle) :phase (random pi) :heading 0.0)
+
+(define-method initialize paddle ()
+  (super%initialize self)
+  (resize self 100 12))
 
 (define-method draw paddle ()
   (let ((index (truncate (* 100 (sin %phase)))))
@@ -248,12 +252,11 @@
     (move-forward self speed)))
 
 (define-method collide paddle (thing)
-  (cond 
-    ((is-brick thing)
-     (restore-location self)
-     (setf %heading (- %heading pi)))
-    ((is-robot thing)
-     (damage thing 1))))
+  (when (is-brick thing)
+    (restore-location self)
+    (setf %heading (- %heading pi)))
+  (when (is-robot thing)
+    (damage thing 1)))
 
 ;;; Deadly burning gas clouds
 
@@ -1088,7 +1091,7 @@
   (image :initform "robot")
   (height :initform 16)
   (width :initform 16)
-  (hp :initform 3)
+  (hp :initform 1)
   (glide-heading :initform nil)
   (speech-timer :initform 0)
   (bomb-loaded :initform t)
@@ -1935,7 +1938,7 @@ included file called `COPYING' for complete license information.
     (setf *game-screen* reactor)
     (setf *level* (random 5))
     (setf *setup-screen* setup-screen)
-    (let ((letter (random-choose '(:alpha :beta :gamma :delta :epsilon))))
+    (let ((letter :beta));(random-choose '(:alpha :beta :gamma :delta :epsilon))))
       (with-world reactor
 	(build-theme (world))
 	(paste (world)
@@ -1948,7 +1951,7 @@ included file called `COPYING' for complete license information.
 	(shrink-wrap (world))
 	(announce (get-player (world)) letter)))
     (show-game-screen flipper)
-    (play-music (random-choose *soundtrack*) :loop t)
+;    (play-music (random-choose *soundtrack*) :loop t)
     (setf *blocks* (list flipper))))
 
 (define-method reset reactor ()
