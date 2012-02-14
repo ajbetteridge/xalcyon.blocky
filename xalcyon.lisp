@@ -1428,19 +1428,30 @@
 (defun wall-around (world)
   (with-fields (height width) world
     (let ((unit (unit)))
-      (border-around
+      (with-border 32
        (with-new-world 
 	 (paste (world) world unit unit)
 	 (draw-solid-room (world) 
 			  (truncate (/ width unit))
 			  (truncate (/ height unit))))))))
 
-;;; The five level types
+;;; Level generation and sequencing
+
+(defparameter *level-types* '(:alpha :beta :gamma :delta :epsilon))
 
 (defun level-value (&rest args)
   (if (<= (length args) *level*)
       (nth (1- (length args)) args)
       (nth *level* args)))
+
+(defun generate-mission ()
+  (let ((mission nil)
+	(types *level-types*))
+    (dotimes (difficulty (length *level-types*))
+      (let ((type (random-choose types)))
+	(setf types (remove type types))
+	(push (list type difficulty) mission)))
+    (reverse mission)))
 
 (define-method build-theme reactor ()
   (setf *theme* (random-theme))
@@ -1451,151 +1462,15 @@
 (define-method build-alpha reactor ()
   (with-world-prototype self
     (wall-around 
-     (border-around
+     (with-border (+ 160 (random 80))
       (stack-horizontally 
-       (border-around
+       (with-border (+ 30 (random 80))
 	(with-new-world (draw-bunker (world) (+ 2 (random 6)) 
-				     (level-value 1 1 2 5 6)))
-	(+ 30 (random 80)))
-       (border-around
+				     (level-value 1 1 2 5 6))))
+
+       (with-border (+ 160 (random 90))
 	(with-new-world (draw-bunker (world) (+ 4 (random 6))
-				     (level-value 1 2 4 5 8)))
-	(+ 160 (random 90))))
-      (+ 160 (random 80))))))
-
-(define-method build-beta reactor ()
-  (with-world-prototype self
-    (wall-around 
-     (border-around
-      (stack-vertically 
-       (border-around (with-new-world (drop (world) (new paddle))) 40)
-       (border-around
-	(stack-vertically 
-	 (border-around (with-new-world 
-			  (draw-bunker (world) 7 (level-value 1 1 2 3 4)))
-			80)
-	 (border-around (with-new-world (drop (world) (new paddle))) 40)
-       (border-around
-	(with-new-world 
-	  (dotimes (n (level-value 2 4 6 8))
-	    (add-block (world) (new paddle) (random 1000) (* n 40))))
-	100)
-	 (border-around (with-new-world (draw-base (world) (level-value 10 8 6 5)
-						   (level-value 1 1 2 3 4)))
-			130)
-	 (border-around 
-	  (stack-vertically 
-	   (with-new-world (draw-bunker (world) 7 (level-value 1 1 2 3 4)))
-	   (border-around (with-new-world (drop (world) (new paddle))) 40))
-	   80))
-	150)
-       (border-around
-	(with-new-world 
-	  (dotimes (n (level-value 2 4 6 8))
-	    (add-block (world) (new paddle) (random 1000) (* n 40))))
-	100)
-       (with-new-world 
-	 (draw-base (world) 
-		    ;; bases smaller as level goes up
-		    (+ 7 (random 2) 
-		       (level-value 5 4 3 2 1))
-		    ;; more bases
-		    (level-value 1 2 3 4))))
-      (level-value 450 320 270)))))
-
-(define-method build-gamma reactor ()
-  (with-world-prototype self
-    (wall-around 
-     (border-around
-      (stack-vertically
-       (combine
-	(stack-horizontally
-	 (with-new-world (draw-bunker (world) (+ 5 (random 6)) 
-				      (level-value 2 3 4 5 7)))
-	 (border-around 
-	  (with-new-world (draw-bunker (world) (+ 5 (random 6)) 
-				       (level-value 2 3 4 5 7)))
-	 220))
-	(border-around 
-	 (with-new-world (dotimes (n (level-value 1 2 2 3 3))
-			   (drop (world) (new rook) 
-				 (random (* 2 (unit 5)))
-				 (random (* 2 (unit 5))))))
-	 300))
-       (border-around
-	(stack-horizontally
-	 (border-around 
-	  (with-new-world (draw-bunker (world) (+ 5 (random 6)) 
-				       (level-value 2 3 4 5 7)))
-	  240)
-	 (border-around 
-	  (with-new-world (draw-bunker (world) (+ 5 (random 6)) 
-				       (level-value 2 3 4 5 7)))
-	  240))))
-       (level-value 400 360 320)))))
-
-(define-method build-delta reactor ()
-  (setf %quadtree-depth 9)
-  (with-world-prototype self
-    (wall-around 
-     (border-around
-
-      (stack-vertically
-
-       (border-around
-	(stack-horizontally
-	 (with-new-world (draw-bunker (world) (+ 5 (random 2))))
-	 (border-around (with-new-world (draw-base (world) (+ 5 (random 4))))
-			(level-value 30 50 70))
-	 (border-around 
-	  (with-new-world (dotimes (n (level-value 0 1 2 3))
-			    (drop (world) (new biclops) 
-				  (random (* 2 (unit 5)))
-				  (random (* 2 (unit 5))))))
-	  150))
-	(level-value 150 200))
-
-       (stack-horizontally
-	(border-around (with-new-world (draw-base self 7 (level-value 1 1 2 3 4)))
-		       80)
-	(border-around (with-new-world (draw-bunker self 7 (level-value 1 1 2 3 4)))
-		       130)
-	(border-around (with-new-world (draw-base self 7 (level-value 1 1 2 3 4)))
-		       80)))
-      (+ 100 (random 100))))))
-
-(define-method build-epsilon reactor ()
-  (setf %quadtree-depth 9)
-  (with-world-prototype self
-    (wall-around 
-     (border-around
-      (stack-vertically
-       (border-around
-	(stack-horizontally 
-	 (border-around (with-new-world (draw-bunker self 3 (level-value 1 1 2 2 2)))
-			(+ 80 (random 30)))
-	 (border-around (with-new-world (draw-bunker self 3 (level-value 1 1 2 2 2)))
-			130)
-	 (border-around (with-new-world (draw-base self 7 (level-value 1 1 2 2 2)))
-			(+ 80 (random 50))))
-	(+ 100 (random 150)))
-       (combine
-	(border-around (with-new-world 
-			 (dotimes (n (level-value 0 2 4 5 6))
-			   (add-block (world)
-				      (new vent)
-				      (random 1000) (random 1000))))
-		       100)
-	(combine
-	 (border-around 
-	  (with-new-world (draw-base (world) 10
-				     (level-value 2 2 3 4 4)))
-	  400)
-	 (border-around 
-	  (with-new-world (draw-base (world) 50
-				     (level-value 1 2 2 2 5)))
-	  100))))
-      (level-value 200 140 100 70)))))
+				     (level-value 1 2 4 5 8)))))))))
 
 ;;; Adding a HUD to the view
 	       	     
@@ -1938,7 +1813,7 @@ included file called `COPYING' for complete license information.
     (setf *game-screen* reactor)
     (setf *level* (random 5))
     (setf *setup-screen* setup-screen)
-    (let ((letter (random-choose '(:alpha :beta :gamma :delta :epsilon))))
+    (let ((letter (random-choose '(:alpha)))); :beta :gamma :delta :epsilon))))
       (with-world reactor
 	(build-theme (world))
 	(paste (world)

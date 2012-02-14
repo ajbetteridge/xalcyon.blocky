@@ -60,27 +60,25 @@ there are enemies that can fire bombs at you too.
 a spread of bullets before dashing away from the player. Highly
 dangerous in groups. They turn red when they're badly damaged.
 
-* TODO only draw onscreen objects
-* TODO fast moving electric death walls too!
-* TODO debug wall glide
-* TODO hot-gas-spewing vents
-* TODO new weapon/enemy boss thing with personality
-* TODO weapon is an auto-firing pod that pops out, uses energy while it fires in a circle, then comes back.
-* TODO or acquire a trail
-* TODO [#B] line-of-sight
-* TODO [#A] fix border-around so that size arg comes first, then &rest worlds
+* TODO only draw onscreen objects?
+
 * TODO [#A] exit at origin that opens to next level when completed, "return to origin" normally hidden <<< landing area with cool opening animation/sound
+* TODO [#B] enemies with spinning shields that vary speed
+* TODO review tigforum comments for todo list item fixes etc
+* TODO Story files, get encrypted data to the transmitter, but you lose your copy if you pass through some region or barrier
+* TODO larger areas with crazy death paddles, long vertical level
+* TODO revise the death paddles to work properly 
+* TODO design two new levels
+** TODO alpha, a basic world 
+* TODO Profile and optimize!
+* TODO [#B] debug wall glide
+* TODO [#A] weapon is an auto-firing pod that pops out, uses energy while it fires in a circle, then comes back.
+* TODO [#A] or acquire a trail
+* TODO [#B] line-of-sight
 * TODO [#B] radiation cloud world
 * TODO [#B] new enemy and/or new item
 * TODO [#B] onscreen event-responsive particle glitch grids, really quick transient effects with transparency mismunch
-
 * TODO [#C] enemy whose bullet knocks you backward possibly into other stuff
-* DONE [#A] player should glide along wall not stick
-  CLOSED: [2012-02-12 Sun 23:17]
-* TODO Profile and optimize!
-* TODO optimize quadtree.lisp?
-* DONE optimize draw-wall to make single rectangle per call 
-  CLOSED: [2012-02-12 Sun 23:17]
 * TODO enemies who camouflage themselves as walls
 * TODO special sound/flash for "ineffective" shots
 * TODO XALCYON is an undiscovered letter symbol of great power
@@ -115,7 +113,6 @@ dangerous in groups. They turn red when they're badly damaged.
 ** TODO [#B] auto-resize quadtree to width, come up with a formula
 ** TODO grammars that boil down to simple lisp functions invoking methods for making worlds etc
 ** TODO world building routines that are parameterized with a bounding box or worldq
-** TODO [#A] Worlds full of markers like "base marker" and "corridor", and those can recursively expand into objects and more markers
 ** TODO [#B] large seamless persistent worlds with lazy procedural generation
 *** TODO Make a really giant quadtree with zillions of objects in it
 *** TODO Choose any subtree as "active"
@@ -123,9 +120,17 @@ dangerous in groups. They turn red when they're badly damaged.
 *** TODO quadtrees do not need to be serialized (the object positions are retained for re-insertion, which is deterministic)
 ** TODO [#C] cache raw struct instead of uuid in #'add-block (instead of 't') --- and in quadtrees?
 ** TODO [#C] and in #objects?
-** TODO [#C] only draw whats onscreen
 ** TODO [#B] rename defresource to define-resource for consistency, and make it more useful (auto-type-detect naming, plus animation)
 ** TODO [#B] recharge time penalty if you run out the meter
+
+* Sanctuary HD ideas
+(09:50:29 PM) dto: ive got it
+(09:51:14 PM) dto: procedural terrain, i.e. you encounter different sequences of forest, riverbank, mountain pass, tundra along the way to your destination
+(09:51:27 PM) dto: but there are story achievements. 
+(09:52:48 PM) dto: like, you find a certain goodie and it reveals part of the story, or witness something scripted and get a cool item, and from that point on even if your character suffers permadeath on this quest, whatever it unlocked will remain unlocked (for example it might add new things to the procedural mix every time you find a story item)
+(09:53:22 PM) dto: so that the game has several levels, the low-level resource management of food and fire---plus the combat and fatigue----then the quest where you are trying to get from point A to B
+(09:53:29 PM) dto: then the hunting for cool stuff and story
+(09:53:33 PM) dto: i.e. replay value
 
 ** DONE make menubar togglable or DISABLED, plus MERGE shell into world with a hotkey to switch modes
    CLOSED: [2012-02-09 Thu 01:22]
@@ -266,3 +271,32 @@ Player speed should be 1 pixel when shift is held (use in danger areas.)
   CLOSED: [2012-02-12 Sun 22:26]
 
 
+
+* Archived Entries
+
+** DONE [#A] fix border-around so that size arg comes first, then &rest worlds
+   CLOSED: [2012-02-13 Mon 22:02]
+   :PROPERTIES:
+   :ARCHIVE_TIME: 2012-02-13 Mon 22:02
+   :ARCHIVE_FILE: ~/xalcyon.blocky/README.org
+   :ARCHIVE_CATEGORY: README
+   :ARCHIVE_TODO: DONE
+   :END:
+
+** DONE [#A] player should glide along wall not stick
+   CLOSED: [2012-02-12 Sun 23:17]
+   :PROPERTIES:
+   :ARCHIVE_TIME: 2012-02-13 Mon 22:02
+   :ARCHIVE_FILE: ~/xalcyon.blocky/README.org
+   :ARCHIVE_CATEGORY: README
+   :ARCHIVE_TODO: DONE
+   :END:
+
+** DONE optimize draw-wall to make single rectangle per call
+   CLOSED: [2012-02-12 Sun 23:17]
+   :PROPERTIES:
+   :ARCHIVE_TIME: 2012-02-13 Mon 22:02
+   :ARCHIVE_FILE: ~/xalcyon.blocky/README.org
+   :ARCHIVE_CATEGORY: README
+   :ARCHIVE_TODO: DONE
+   :END:
