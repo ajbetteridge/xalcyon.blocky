@@ -60,18 +60,20 @@ there are enemies that can fire bombs at you too.
 a spread of bullets before dashing away from the player. Highly
 dangerous in groups. They turn red when they're badly damaged.
 
-* TODO only draw onscreen objects?
-
+* TODO fixed width energy readout field
+* TODO do the simplest thing that could possibly work
 * TODO [#A] exit at origin that opens to next level when completed, "return to origin" normally hidden <<< landing area with cool opening animation/sound
+* TODO crazy linear vertical level
 * TODO [#B] enemies with spinning shields that vary speed
+* TODO use swig to make libmikmod bindings
+
+* TODO properly set *dt*
 * TODO review tigforum comments for todo list item fixes etc
 * TODO Story files, get encrypted data to the transmitter, but you lose your copy if you pass through some region or barrier
-* TODO larger areas with crazy death paddles, long vertical level
 * TODO revise the death paddles to work properly 
-* TODO design two new levels
-** TODO alpha, a basic world 
-* TODO Profile and optimize!
 * TODO [#B] debug wall glide
+* TODO have the aliens say things with little icons/sounds
+* TODO Profile and optimize!
 * TODO [#A] weapon is an auto-firing pod that pops out, uses energy while it fires in a circle, then comes back.
 * TODO [#A] or acquire a trail
 * TODO [#B] line-of-sight
@@ -83,7 +85,6 @@ dangerous in groups. They turn red when they're badly damaged.
 * TODO special sound/flash for "ineffective" shots
 * TODO XALCYON is an undiscovered letter symbol of great power
 * TODO final level is Xalcyon Infinity
-* TODO have the aliens say things with little icons/sounds
 * TODO [#B] more themes 
 * TODO [#B] investigate http://angg.twu.net/ICON/tron.icn
 * TODO basic in-game help screen (doubles as pause feature) on F1, any joystick button to cancel
@@ -300,3 +301,13 @@ Player speed should be 1 pixel when shift is held (use in danger areas.)
    :ARCHIVE_CATEGORY: README
    :ARCHIVE_TODO: DONE
    :END:
+
+** DONE only draw onscreen objects?
+   CLOSED: [2012-02-14 Tue 21:27]
+   :PROPERTIES:
+   :ARCHIVE_TIME: 2012-02-14 Tue 21:27
+   :ARCHIVE_FILE: ~/xalcyon.blocky/README.org
+   :ARCHIVE_CATEGORY: README
+   :ARCHIVE_TODO: DONE
+   :END:
+

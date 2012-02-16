@@ -1437,7 +1437,7 @@
 
 ;;; Level generation and sequencing
 
-(defparameter *level-types* '(:alpha :beta :gamma :delta :epsilon))
+(defparameter *level-types* '(:alpha :beta :gamma :delta :epsilon :xalcyon))
 
 (defun level-value (&rest args)
   (if (<= (length args) *level*)
@@ -1446,7 +1446,7 @@
 
 (defun generate-mission ()
   (let ((mission nil)
-	(types *level-types*))
+	(type *level-types*))
     (dotimes (difficulty (length *level-types*))
       (let ((type (random-choose types)))
 	(setf types (remove type types))
@@ -1467,6 +1467,7 @@
        (with-border (+ 30 (random 80))
 	(with-new-world (draw-bunker (world) (+ 2 (random 6)) 
 				     (level-value 1 1 2 5 6))))
+
        (with-border (+ 160 (random 90))
 	(with-new-world (draw-bunker (world) (+ 4 (random 6))
 				     (level-value 1 2 4 5 8)))))))))
@@ -1812,7 +1813,7 @@ included file called `COPYING' for complete license information.
     (setf *game-screen* reactor)
     (setf *level* (random 5))
     (setf *setup-screen* setup-screen)
-    (let ((letter (random-choose '(:alpha :beta :gamma :delta :epsilon))))
+    (let ((letter (random-choose '(:alpha)))); :beta :gamma :delta :epsilon))))
       (with-world reactor
 	(build-theme (world))
 	(paste (world)
