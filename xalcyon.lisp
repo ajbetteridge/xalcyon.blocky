@@ -35,7 +35,8 @@
 (setf *resizable* t)
 (setf *window-title* "Xalcyon")
 (setf *use-antialiased-text* t)
-(setf *scale-output-to-window* t)
+(setf *scale-output-to-window* nil)
+;(setf *dt* 20) 
 (setf *frame-rate* 30)
 
 (defparameter *xalcyon-font* "sans-bold-14") 
@@ -894,7 +895,7 @@
 (defun make-explosion (thing &optional (size 8))
   (multiple-value-bind (x y) (center-point thing)
     (dotimes (n size)
-      (add-block (world) (new explosion) x y))))
+      (add-object (world) (new explosion) x y))))
   
 (defresource
     (:name "mine" :type :image :file "bomb.png")
@@ -1461,15 +1462,21 @@
 
 (define-method build-alpha reactor ()
   (with-world-prototype self
-    (wall-around 
-     (with-border (+ 160 (random 80))
-      (stack-horizontally 
-       (with-border (+ 30 (random 80))
-	(with-new-world (draw-bunker (world) (+ 2 (random 6)) 
-				     (level-value 1 1 2 5 6))))
-       (with-border (+ 160 (random 90))
-	(with-new-world (draw-bunker (world) (+ 4 (random 6))
-				     (level-value 1 2 4 5 8)))))))))
+    (with-new-world 
+      (draw-solid-room (world) 32 32))))
+		       
+
+;; (define-method build-alpha reactor ()
+;;   (with-world-prototype self
+;;     (wall-around 
+;;      (with-border (+ 160 (random 80))
+;;       (stack-horizontally 
+;;        (with-border (+ 30 (random 80))
+;; 	(with-new-world (draw-bunker (world) (+ 2 (random 6)) 
+;; 				     (level-value 1 1 2 5 6))))
+;;        (with-border (+ 160 (random 90))
+;; 	(with-new-world (draw-bunker (world) (+ 4 (random 6))
+;; 				     (level-value 1 2 4 5 8)))))))))
 
 ;;; Adding a HUD to the view
 	       	     
@@ -1484,7 +1491,7 @@
 	       (line-height (font-height font))
 	       (x (+ left (dash 5)))
 	       (y (- bottom line-height (dash 2)))
-	       (label (format nil "energy: ~3,2f  chip: ~d  item: ~a  enemy: ~d  |  press F1 for setup, SPACE to reset" 
+	       (label (format nil "energy: ~3,2f  chip: ~d  item: ~a  enemy: ~d  |  press F1 for setup, CTRL-R to reset" 
 			      energy chips item enemy-count))
 	       (bar-width 120))
 	  ;; draw background
@@ -1518,42 +1525,6 @@
 	(win %player))
       (setf %enemy-count enemy-count))))
     
-;;; joystick setup screen 
-
-(define-block (action-button :super :list)
-  (category :initform :button)
-  (target :initform nil)
-  (method :initform nil)
-  (arguments :initform nil)
-  (label :initform nil))
-
-(define-method initialize action-button 
-    (&key target method arguments label)
-  (when target (setf %target target))
-  (when method (setf %method method))
-  (when label (setf %label label))
-  (when arguments (setf %arguments arguments)))
-
-(define-method layout action-button ()
-  (with-fields (height width) self
-    (setf width (+ (* 13 (dash))
-		   (font-text-width %label
-				    *block-bold*))
-	  height (+ (font-height *block-bold*) (* 4 (dash))))))
-
-(define-method draw action-button ()
-  (with-fields (x y height width label) self
-    (draw-patch self x y (+ x width) (+ y height))
-    (draw-image "colorbang" 
-		    (+ x (dash 1))
-		    (+ y (dash 1)))
-    (draw-string %label (+ x (dash 9)) (+ y (dash 2))
-		 :color "white"
-		 :font *block-bold*)))
-
-(define-method tap action-button (x y)
-  (apply #'send %method %target %arguments))
-
 ;;; configuring joystick buttons
 
 (define-block (button-chooser :super "BLOCKY:LIST")
@@ -1744,14 +1715,14 @@ included file called `COPYING' for complete license information.
 (defvar *game-screen* nil)
 (defvar *setup-screen* nil)
 
-(define-block setup)
+(define-world setup)
 
-(define-method initialize setup ()
-  (super%initialize self)
-  (let ((box (new text (concatenate 'string *xalcyon-copyright-notice*))))
-    (resize-to-scroll box 80 7)
-    (end-of-line box)
-    (add-block self (new list (new button-config) box) 90 30)))
+;; (define-method initialize setup ()
+;;   (super%initialize self)
+;;   (let ((box (new text (concatenate 'string *xalcyon-copyright-notice*))))
+;;     (resize-to-scroll box 80 7)
+;;     (end-of-line box)
+;;     (add-block (world) (new list (new button-config) box) 90 30)))
 
 ;;; a widget to flip between the game screen and setup screen
 
@@ -1804,29 +1775,24 @@ included file called `COPYING' for complete license information.
   (setf *world* nil)
   (let* ((robot (new robot))
 	 (reactor (new reactor))
-	 (setup-screen (new shell (new setup)))
 	 (flipper (new flipper)))
     (set-player reactor robot)
-    (bind-event reactor '(:space) :reset)
+    (bind-event reactor '(:r :control) :reset)
     (set-location robot 60 60)
     (setf *game-screen* reactor)
     (setf *level* (random 5))
-    (setf *setup-screen* setup-screen)
-    (let ((letter (random-choose '(:alpha :beta :gamma :delta :epsilon))))
+    (let ((letter (random-choose '(:alpha)))); :beta :gamma :delta :epsilon))))
       (with-world reactor
 	(build-theme (world))
-	(paste (world)
-	       (ecase letter
-		 (:alpha (build-alpha (world)))
-		 (:beta (build-beta (world)))
-		 (:gamma (build-gamma (world)))
-		 (:delta (build-delta (world)))
-		 (:epsilon (build-epsilon (world)))))
+	(build-alpha (world))
 	(shrink-wrap (world))
 	(announce (get-player (world)) letter)))
-    (show-game-screen flipper)
-;    (play-music (random-choose *soundtrack*) :loop t)
-    (setf *blocks* (list flipper))))
+    (let ((setup-screen (new setup)))
+      (setf *setup-screen* setup-screen)
+      (show-game-screen flipper)
+      (setf *blocks* (list flipper)))))
+					;    (play-music (random-choose *soundtrack*) :loop t)
+
 
 (define-method reset reactor ()
   (xalcyon))
