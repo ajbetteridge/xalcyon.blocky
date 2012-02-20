@@ -216,7 +216,7 @@
 (define-method damage brick (points) nil)
 
 (define-method initialize brick (&optional color)
-  (super%initialize self)
+  (initialize%super self)
   (resize self 16 16)
   (setf %color color))
 
@@ -236,7 +236,7 @@
 (define-block paddle :tags '(:paddle) :phase (random pi) :heading 0.0)
 
 (define-method initialize paddle ()
-  (super%initialize self)
+  (initialize%super self)
   (resize self 100 12))
 
 (define-method draw paddle ()
@@ -306,7 +306,7 @@
 		  :alpha 0.7)))))
 
 (define-method initialize cloud (&optional (size (+ 16 (random 32))))
-  (super%initialize self)
+  (initialize%super self)
   (resize self size size))
 
 (define-method update cloud ()
@@ -559,7 +559,7 @@
 	 (destroy self)))))
 
 (define-method initialize bullet (heading &key tags speed radius timer)
-  (super%initialize self)
+  (initialize%super self)
   (setf %heading heading)
   (when speed (setf %speed speed))
   (when timer (setf %timer timer))
@@ -639,7 +639,7 @@
     (later 20 (clear-overlay self))))
 
 (define-method draw glitch ()
-  (super%draw self)
+  (draw%super self)
   (set-blending-mode :additive2)
   (when %overlay-color
     (draw-box %x %y %width %height
@@ -922,7 +922,7 @@
   (destroy self))
 
 (define-method initialize bomb (heading &key origin)
-  (super%initialize self)
+  (initialize%super self)
   (setf %image "bomb4")
   (setf %origin origin)
   (aim self heading))
@@ -1129,12 +1129,12 @@
       (later 2.0 (speak-symbol self level))))
 
 (define-method initialize robot ()
-  (initialize%%block self)
+  (block%initialize self)
   (bind-event self '(:joystick :left-trigger :button-down) :activate-extension)
   (bind-event self '(:joystick :left-trigger :button-up) :deactivate-extension))
 
 (define-method draw robot ()
-  (super%draw self)
+  (draw%super self)
   (when (not %dead)
     (multiple-value-bind (x y) (step-toward-heading self %heading 20)
       (draw-circle x y 3 :color (random-choose '("cyan" "white")) :type :solid))))
@@ -1487,7 +1487,7 @@
   ;; heads up display
   (multiple-value-bind (top left right bottom)
       (window-bounding-box self)
-    (draw%%world self)
+    (world%draw self)
     (with-field-values (energy chips item) (player)
       (with-field-values (enemy-count) self
 	(let* ((font *xalcyon-font*)
@@ -1516,7 +1516,7 @@
 		       :font *xalcyon-font*))))))
   
 (define-method update reactor ()
-  (update%%world self)
+  (update%super self)
   (setf %background-color (theme-color :background))
   (unless %level-clear
     (let ((enemy-count 0))
@@ -1562,7 +1562,7 @@
   (cons (evaluate (second %inputs)) %button-symbol))
 
 (define-method initialize button-chooser (button-symbol &optional (button-number 0))
-  (super%initialize self
+  (initialize%super self
 		    (new action-button 
 			 :label (format nil "capture button ~a now" button-symbol)
 			 :arguments (list button-symbol)
@@ -1591,7 +1591,7 @@
 (define-method initialize axis-chooser (name number)
   (setf %axis-name name)
   (setf %axis-number number)
-  (super%initialize self
+  (initialize%super self
 		    (new symbol
 			 :value name
 			 :label "for this direction")
@@ -1623,7 +1623,7 @@
 (define-block (button-config :super :list))
 
 (define-method initialize button-config ()
-  (apply #'super%initialize 
+  (apply #'initialize%super 
 	 self
 	 (list
 	  (new button-chooser :left-trigger)
@@ -1724,7 +1724,7 @@ included file called `COPYING' for complete license information.
     (draw %screen)))
 
 (define-method handle-event flipper (event)
-  (or (super%handle-event self event)
+  (or (handle-event%super self event)
       (handle-event %screen event)))
 
 (define-method initialize flipper ()
