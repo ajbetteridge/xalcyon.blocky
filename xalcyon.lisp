@@ -28,16 +28,16 @@
 (defvar *level* 0)
 
 (setf *author* "David T. O'Toole <dto@ioforms.org> http://dto.github.com/notebook/")
-(setf *screen-width* 890)
-(setf *screen-height* 530)
-(setf *nominal-screen-width* 890)
-(setf *nominal-screen-height* 530)
+(setf *screen-width* 800)
+(setf *screen-height* 600)
+(setf *nominal-screen-width* 800)
+(setf *nominal-screen-height* 600)
 (setf *resizable* t)
 (setf *window-title* "Xalcyon")
 (setf *use-antialiased-text* t)
 (setf *scale-output-to-window* nil)
-;(setf *dt* 20) 
 (setf *frame-rate* 30)
+(setf *dt* 20)
 
 (defparameter *xalcyon-font* "sans-bold-14") 
 
@@ -203,6 +203,8 @@
   :collision-type :passive
   :color (theme-color))
 
+(define-method layout brick ())
+
 (define-method bounding-box brick ()
   ;; shrink bounding box by 1 px to prevent adjacent bricks from
   ;; resting contact
@@ -215,6 +217,7 @@
 
 (define-method initialize brick (&optional color)
   (super%initialize self)
+  (resize self 16 16)
   (setf %color color))
 
 (defmacro defbrick (name &body body)
@@ -1611,44 +1614,6 @@
 
 (define-method evaluate axis-chooser ()
   (evaluate (second %inputs)))
-
-;;; Message output window
-
-(define-block messenger :category :terminal)
-
-(defparameter *messenger-columns* 80)
-(defparameter *messenger-rows* 7)
-
-(define-method layout messenger ()
-  (setf %height (+ (* (font-height *font*) (+ *messenger-rows* 1))
-		   (dash 4)))
-  (let ((width 0))
-    (block measuring
-      (dotimes (n *messenger-rows*)
-	(if (<= (length *message-history*) n)
-	    (return-from measuring nil)
-	    (setf width 
-		  (max width 
-		       (font-text-width 
-			(nth n *message-history*)
-			*block-font*))))))
-    (setf %width (+ width (dash 5)))))
-			     
-(define-method draw messenger ()
-  (draw-background self)
-  (with-fields (x y width height) self
-      (let ((y0 (+ y height (- 0 (dash 2) (font-height *font*))))
-	    (x0 (+ x (dash 3))))
-	(draw-string "messages" x0 (+ y (dash 2))
-		     :color "white"
-		     :font *block-bold*)
-	(dotimes (n *messenger-rows*)
-	  (unless (<= (length *message-history*) n)
-	    (draw-string (nth n *message-history*)
-			 x0 y0
-			 :color "gray70"
-			 :font *block-font*)
-	    (decf y0 (font-height *font*)))))))
 
 ;;; The configurator dialog
 
