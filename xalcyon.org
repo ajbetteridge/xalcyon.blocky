@@ -1,0 +1,6 @@
+* design basic open reactor level with 1 large walled in area
+* design 2nd variant of a level
+* design enemy spawners with #'LEVEL-VALUE rates/protos
+* enemy patterns pre-scripted
+* reactors emit particles (red background flash) that you must collect
+* IMPORT THE animated INFLTR8R dude!

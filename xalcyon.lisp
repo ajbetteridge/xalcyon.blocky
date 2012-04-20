@@ -20,6 +20,8 @@
 
 ;;; Preamble
 
+;; (add-to-list 'imenu-generic-expression '("Blocks" "^(define-block[:space:]+\\(\\[:word:]+\\)" 1))
+
 (defpackage :xalcyon 
   (:use :blocky :common-lisp))
 
@@ -28,18 +30,20 @@
 (defvar *level* 0)
 
 (setf *author* "David T. O'Toole <dto@ioforms.org> http://dto.github.com/notebook/")
-(setf *screen-width* 800)
-(setf *screen-height* 600)
-(setf *nominal-screen-width* 800)
-(setf *nominal-screen-height* 600)
+(setf *screen-width* 1280)
+(setf *screen-height* 720)
+;; (setf *nominal-screen-width* 640)
+;; (setf *nominal-screen-height* 360)
+(setf *default-texture-filter* :nearest)
+;(setf *font-texture-filter* :nearest)
+(setf *scale-output-to-window* nil) 
 (setf *resizable* t)
 (setf *window-title* "Xalcyon")
-(setf *use-antialiased-text* t)
-(setf *scale-output-to-window* nil)
+(setf *use-antialiased-text* nil)
 (setf *frame-rate* 30)
 (setf *dt* 20)
 
-(defparameter *xalcyon-font* "sans-bold-14") 
+(defparameter *xalcyon-font* "sans-bold-12") 
 
 (defun is-enemy (thing) 
   (has-tag thing :enemy))
@@ -253,7 +257,7 @@
 	      (level-value 9 11 13 13)
 	      (level-value 5 6 7 8))))
     (incf %phase (/ speed 100))
-    (move-forward self speed)))
+    (forward self speed)))
 
 (define-method collide paddle (thing)
   (when (is-brick thing)
@@ -310,7 +314,7 @@
   (resize self size size))
 
 (define-method update cloud ()
-  (move-forward self 1)
+  (forward self 1)
   (decf %timer)
   (when (evenp %timer)
     (setf %image (random-choose *vent-images*)))
@@ -335,7 +339,7 @@
     (when (plusp timer)
       (percent-of-time 25 
 	(play-sample "magenta-alert")
-	(drop self (new bullet (heading-to-player self)) 20 20))
+	(drop self (new 'bullet (heading-to-player self)) 20 20))
       (decf timer))
     (when (zerop timer)
       (percent-of-time 3
@@ -435,7 +439,7 @@
 (define-method update chip () 
   (when (< (distance-to-player self) 100)
     (point-at-thing self (player)))
-  (move-forward self %speed))
+  (forward self %speed))
 
 (define-method collide chip (thing)
   (cond
@@ -452,7 +456,7 @@
 
 (defun drop-chips (thing &key (value-multiplier 1) (count (random 3)))
   (dotimes (n count)
-    (let ((chip (new chip)))
+    (let ((chip (new 'chip)))
       (setf (field-value :value chip)
 	    (truncate (* value-multiplier (field-value :value chip))))
       (drop thing chip (random 10) (random 10)))))
@@ -477,7 +481,7 @@
 (defun make-sparks (x y &optional (n 5))
   (dotimes (z n)
     (drop-block *world* 
-		(new spark) 
+		(new 'spark) 
 		(+ x (random 30)) (+ y (random 30)))))
 
 ;;; Versatile bullets
@@ -513,7 +517,7 @@
   (decf %timer)
   (if (zerop %timer) 
       (destroy self)
-      (move-forward self %speed)))
+      (forward self %speed)))
 
 (define-method collide bullet (thing)
   (cond 
@@ -623,7 +627,7 @@
 
 (define-method creep glitch ()
   (point-at-thing self (player))
-  (move-forward self %speed)
+  (forward self %speed)
   (when (< (distance-to-player self) 460)
     (percent-of-time 2 
       (play-sound self "munch1")
@@ -671,7 +675,7 @@
 
 (define-method flee monitor ()
   (setf %heading (+ pi (heading-to-player self)))
-  (move-forward self 3.2))
+  (forward self 3.2))
 
 (define-method stop-fleeing monitor ()
   (setf %fleeing nil))
@@ -686,7 +690,7 @@
     (if (< dist 250)
 	(progn 
 	  (setf %heading (heading-to-player self))
-	  (move-forward self 2)
+	  (forward self 2)
 	  ;; if close enough, fire and run away 
 	  (when (< dist 190)
 	    (fire self (heading-to-player self))
@@ -731,9 +735,9 @@
 
 (define-method fire monitor (direction)
   (multiple-value-bind (x y) (center-point self)
-    (drop self (new bullet (heading-to-player self)))
+    (drop self (new 'bullet (heading-to-player self)))
     (dotimes (n (level-value 0 1 2 3))
-      (drop self (new bullet 
+      (drop self (new 'bullet 
 		      (+ (heading-to-player self) -1.5 (random 3.2))
 		      :timer 100)))))
 
@@ -755,7 +759,7 @@
   :image (random-choose *wreckage-images*))
 
 (define-method update wreckage ()
-  (move-forward self (level-value 1 1.5 2 2.3 3)))
+  (forward self (level-value 1 1.5 2 2.3 3)))
 
 (define-method collide wreckage (thing)
   (when (is-robot thing)
@@ -776,7 +780,7 @@
 (define-method update biclops ()
   (when (> (level-value 300 400 500) (distance-to-player self))
     (percent-of-time (level-value 0.8 1 1.2 1.3)
-      (drop self (new glitch) 10 2)))
+      (drop self (new 'glitch) 10 2)))
   (move-toward self %direction (level-value 1 1.8 2.5 3)))
 
 (define-method collide biclops (thing)
@@ -797,9 +801,9 @@
 	  (make-sparks x y 3)
 	  (percent-of-time (level-value 10 20 30) (make-explosion self 4))
 	  (dotimes (n 5)
-	    (drop self (new wreckage) (random 30) (random 30)))
+	    (drop self (new 'wreckage) (random 30) (random 30)))
 	  (dotimes (n 8)
-	    (drop self (new bullet (random (* 2 pi))) (random 50) (random 100)))
+	    (drop self (new 'bullet (random (* 2 pi))) (random 50) (random 100)))
 	  (destroy self)))))
 
 ;;; Positronic trail to gather items / block bullets
@@ -898,7 +902,7 @@
 (defun make-explosion (thing &optional (size 8))
   (multiple-value-bind (x y) (center-point thing)
     (dotimes (n size)
-      (add-object (world) (new explosion) x y))))
+      (add-object (world) (new 'explosion) x y))))
   
 (defresource
     (:name "mine" :type :image :file "bomb.png")
@@ -958,7 +962,7 @@
 	(move-to self x y))
       ;; move in straight line to find target
       (unless %stopped
-	(move-forward self %speed)))
+	(forward self %speed)))
   ;; possibly explode and/or update timer
   (with-fields (countdown timer image) self
     (if (zerop countdown)
@@ -998,7 +1002,7 @@
     (destroy self)))
 
 (define-method fire rook (heading)
-  (drop self (new bomb heading :origin self)))
+  (drop self (new 'bomb heading :origin self)))
 
 (define-method update rook ()
   (with-fields (timer) self
@@ -1018,14 +1022,14 @@
 	;; begin approach after staying still
 	((and (< dist 570) (zerop timer))
 	 (aim self dir)
-	 (move-forward self 2))
+	 (forward self 2))
 	;; run away fast
 	((and (< dist 420) (plusp timer))
 	 (aim self (- %heading 0.03))
 	 (percent-of-time (level-value 0 1.0 1.3) 
 	   (play-sample "magenta-alert")
-	   (drop self (new bullet (heading-to-player self)) 14 14))
-	 (move-forward self 3))
+	   (drop self (new 'bullet (heading-to-player self)) 14 14))
+	 (forward self 3))
 	;; otherwise do nothing
 	))))
 
@@ -1161,7 +1165,7 @@
     (when (plusp energy)
       (let (shields)
 	(dotimes (n *shield-units*)
-	  (push (new shield) shields)
+	  (push (new 'shield) shields)
 	  (drop self (first shields))
 	  (setf %shields shields))))))
 
@@ -1189,7 +1193,7 @@
 	     (> %energy 40))
     (charge self 30)
     (play-sample "bombs-away")
-    (drop self (new bomb %heading))
+    (drop self (new 'bomb %heading))
     (setf %bomb-loaded nil)))
 
 (define-method load-bomb robot ()
@@ -1216,7 +1220,7 @@
   (setf %ready t))
 
 (defun player-bullet (heading)
-  (new bullet heading :speed 7 :tags '(:player)))
+  (new 'bullet heading :speed 7 :tags '(:player)))
 
 (define-method charge robot (amount)
   (assert (plusp amount))
@@ -1243,7 +1247,7 @@
   (when (not %dead)
     (play-sound self (defresource :name "deathx" :type :sample :file "deathx.wav" :properties (:volume 100)))
     (setf %dead t)
-    (let ((sign (new lose)))
+    (let ((sign (new 'lose)))
       (drop self sign 32 32)
       (center sign))
     (play-music "nexttime")
@@ -1252,12 +1256,12 @@
 	(later 1.4 (say self message))))
     (change-image self (defresource :name "skull" :type :image :file "skull.png"))))
 
-(define-method win robot ()
-  (play-music "vixon")
-  (let ((sign (new win)))
-    (drop self sign 32 32)
-    (center sign)
-    (later 5.0 (destroy sign))))
+(define-method win robot ())
+  ;; (play-music "vixon")
+  ;; (let ((sign (new 'win)))
+  ;;   (drop self sign 32 32)
+  ;;   (center sign)
+  ;;   (later 5.0 (destroy sign))))
 
 (define-method collide robot (thing)
   (cond
@@ -1282,7 +1286,7 @@
 (define-method drop-trail-maybe robot ()
   (decf %trail-timer)
   (when (zerop %trail-timer)
-    (drop self (new trail) 6 6)
+    (drop self (new 'trail) 6 6)
     (setf %trail-timer 2)))
 
 (define-method auto-recharge robot ()
@@ -1307,7 +1311,7 @@
       (let ((heading (left-analog-stick-heading)))
 	(aim self heading)
 	;; possibly glide along wall
-	(move-toward-heading self (or %glide-heading heading) 3.5)
+	(move self (or %glide-heading heading) 3.5)
 ;	(drop-trail-maybe self)
 	))
     (if (right-analog-stick-pressed-p)
@@ -1331,8 +1335,8 @@
       (percent-of-time 8
 	(percent-of-time 10 (play-sample "vox-radiation"))
 	(dotimes (n 3)
-	  (drop self (new glitch))))
-      (drop self (new monitor)))))
+	  (drop self (new 'glitch))))
+      (drop self (new 'monitor)))))
 
 (define-method damage base (points)
   (decf %hp)
@@ -1364,27 +1368,27 @@
     ;; a lazy approach.
     ;; lay down some bricks to measure
     (dotimes (n length)
-      (let ((brick (new brick)))
+      (let ((brick (new 'brick)))
 	(drop self brick)
 	(push brick bricks)
 	(resize brick *wall-thickness* *wall-thickness*)
-	(move-forward self (unit))))
+	(forward self (unit))))
     ;; now replace them with one brick
     (when bricks
       (multiple-value-bind (top left right bottom)
 	  (find-bounding-box bricks)
 	(mapc #'destroy bricks)
-	(let ((big-brick (new brick)))
+	(let ((big-brick (new 'brick)))
 	  (drop self big-brick)
 	  (move-to big-brick left top)
 	  (resize big-brick (- right left) (- bottom top)))))))
   
 (define-method draw-barrier reactor (length)
   (dotimes (n length)
-    (let ((barrier (new barrier)))
+    (let ((barrier (new 'barrier)))
       (drop self barrier)
       (resize barrier *wall-thickness* *wall-thickness*)
-      (move-forward self (unit)))))
+      (forward self (unit)))))
 
 (define-method draw-square reactor (size)
   (dotimes (n 4)
@@ -1394,7 +1398,7 @@
 (define-method draw-base reactor (size0 &optional (bases 1))
   (let ((size (+ 6 size0)))
     (dotimes (n bases)
-      (drop self (new base)
+      (drop self (new 'base)
 	    (unit (+ 2 (random (- size 2))))
 	    (unit (+ 2 (random (- size 2))))))
     (let ((gap (+ 2 (random 2))))
@@ -1410,12 +1414,12 @@
     (let ((gap (+ 3 (random 2))))
       (dotimes (n 4)
 	(draw-wall self (- size gap 2))
-	(move-forward self (unit gap))
+	(forward self (unit gap))
 	(draw-wall self 2)
 	(draw-wall self 2)
 	(turn-right self))
       (dotimes (n monitors)
-	(drop self (new monitor) 
+	(drop self (new 'monitor) 
 	      (unit (+ 2 (random size0)))
 	      (unit (+ 2 (random size0))))))))
 
@@ -1468,7 +1472,6 @@
     (with-new-world 
       (draw-solid-room (world) 32 32))))
 		       
-
 ;; (define-method build-alpha reactor ()
 ;;   (with-world-prototype self
 ;;     (wall-around 
@@ -1483,50 +1486,64 @@
 
 ;;; Adding a HUD to the view
 	       	     
-(define-method draw reactor ()
+(define-method draw-overlays reactor ()
   ;; heads up display
-  (multiple-value-bind (top left right bottom)
-      (window-bounding-box self)
-    (world%draw self)
-    (with-field-values (energy chips item) (player)
-      (with-field-values (enemy-count) self
-	(let* ((font *xalcyon-font*)
-	       (line-height (font-height font))
-	       (x (+ left (dash 5)))
-	       (y (- bottom line-height (dash 2)))
-	       (label (format nil "energy: ~3,2f  chip: ~d  item: ~a  enemy: ~d  |  press F1 for setup, CTRL-R to reset" 
-			      energy chips item enemy-count))
-	       (bar-width 120))
-	  ;; draw background
-	  (draw-box left (- y 6) *gl-screen-width* (* 4 line-height) :color "black")
-	  ;; draw energy bar 
-	  (draw-box x y bar-width line-height :color "gray30")
-	  (when (plusp energy)
-	    (draw-box x y (* 1.2 energy) line-height 
-		      :color (cond 
-			       ((>= energy 85) "chartreuse")
-			       ((>= energy 70) "yellow")
-			       ((>= energy 40) "orange")
-			       ((>= 20 energy) "red")
-			       (t "orange"))))
-	  ;; show stats
-	  (draw-string label 
-		       (+ x bar-width (dash)) y 
-		       :color "white"
-		       :font *xalcyon-font*))))))
+  (when %player
+    (multiple-value-bind (top left right bottom)
+	(window-bounding-box self)
+      (with-field-values (energy chips item) %player
+	(with-field-values (enemy-count) self
+	  (let* ((font *xalcyon-font*)
+		 (line-height (font-height font))
+		 (x (+ left (dash 5)))
+		 (y (- bottom line-height (dash 2)))
+		 (label (format nil "energy: ~3,2f  chip: ~d  item: ~a  enemy: ~d  |  press F1 for setup, CTRL-R to reset" 
+				energy chips item enemy-count))
+		 (bar-width 120))
+	    ;; draw background
+	    (draw-box left (- y 6) *gl-screen-width* (* 4 line-height) :color "black")
+	    ;; draw energy bar 
+	    (draw-box x y bar-width line-height :color "gray30")
+	    (when (plusp energy)
+	      (draw-box x y (* 1.2 energy) line-height 
+			:color (cond 
+				 ((>= energy 85) "chartreuse")
+				 ((>= energy 70) "yellow")
+				 ((>= energy 40) "orange")
+				 ((>= 20 energy) "red")
+				 (t "orange"))))
+	    ;; show stats
+	    (draw-string label 
+			 (+ x bar-width (dash)) y 
+			 :color "white"
+			 :font *xalcyon-font*)))))))
   
 (define-method update reactor ()
   (update%super self)
   (setf %background-color (theme-color :background))
-  (unless %level-clear
-    (let ((enemy-count 0))
-      (loop for object being the hash-keys in %objects do
-	(when (is-enemy object)
-	  (incf enemy-count)))
-      (when (zerop enemy-count)
-	(setf %level-clear t)
-	(win %player))
-      (setf %enemy-count enemy-count))))
+  (unless %paused
+    (when %player
+      (unless %level-clear
+	(let ((enemy-count 0))
+	  (loop for object being the hash-keys in %objects do
+	    (when (is-enemy object)
+	      (incf enemy-count)))
+	  (when (zerop enemy-count)
+	    (setf %level-clear t)
+	    (win %player))
+	  (setf %enemy-count enemy-count))))))
+
+(define-method add-player reactor ()
+  (let ((player (new 'robot)))
+    (set-player self player)
+    (multiple-value-bind (x y) (center-point self)
+      (add-object self player x y))))
+
+(defvar *setup* nil)
+(defvar *game* nil)
+
+(define-method show-setup-screen reactor ()
+  (start-alone *setup*))
     
 ;;; configuring joystick buttons
 
@@ -1563,12 +1580,12 @@
 
 (define-method initialize button-chooser (button-symbol &optional (button-number 0))
   (initialize%super self
-		    (new action-button 
+		    (new 'action-button 
 			 :label (format nil "capture button ~a now" button-symbol)
 			 :arguments (list button-symbol)
 			 :target self
 			 :method :begin-capturing)
-		    (new integer
+		    (new 'integer
 			 :value button-number
 			 :label "use button number"))
   (assert (keywordp button-symbol))
@@ -1592,13 +1609,13 @@
   (setf %axis-name name)
   (setf %axis-number number)
   (initialize%super self
-		    (new symbol
+		    (new 'symbol
 			 :value name
 			 :label "for this direction")
-		    (new integer
+		    (new 'integer
 			 :value number
 			 :label "use axis number")
-		    (new integer
+		    (new 'integer
 			 :value 0
 			 :label "(current value)"))
   (freeze self))
@@ -1626,19 +1643,19 @@
   (apply #'initialize%super 
 	 self
 	 (list
-	  (new button-chooser :left-trigger)
-	  (new button-chooser :right-trigger)
-	  (new axis-chooser :left-stick-horizontal 0)
-	  (new axis-chooser :left-stick-vertical 1)
-	  (new axis-chooser :right-stick-horizontal 3)
-	  (new axis-chooser :right-stick-vertical 2)
-	  (new integer :value 6000 :label "joystick dead zone for values below")
-	  (new action-button 
+	  (new 'button-chooser :left-trigger)
+	  (new 'button-chooser :right-trigger)
+	  (new 'axis-chooser :left-stick-horizontal 0)
+	  (new 'axis-chooser :left-stick-vertical 1)
+	  (new 'axis-chooser :right-stick-horizontal 3)
+	  (new 'axis-chooser :right-stick-vertical 2)
+	  (new 'integer :value 6000 :label "joystick dead zone for values below")
+	  (new 'action-button 
 	       :label "save changes"
 	       :method :save-changes
 	       :target self)
-	  (new messenger)
-	  (new action-button 
+	  (new 'messenger)
+	  (new 'action-button 
 	       :label "return to game"
 	       :method :return-to-game
 	       :target self)
@@ -1677,87 +1694,46 @@ audiovisual materials are under Creative Commons license. See the
 included file called `COPYING' for complete license information.
 ")
 
-(defvar *game-screen* nil)
-(defvar *setup-screen* nil)
-
 (define-world setup)
 
-;; (define-method initialize setup ()
-;;   (super%initialize self)
-;;   (let ((box (new text (concatenate 'string *xalcyon-copyright-notice*))))
-;;     (resize-to-scroll box 80 7)
-;;     (end-of-line box)
-;;     (add-block (world) (new list (new button-config) box) 90 30)))
+(define-method initialize setup ()
+  (initialize%super self)
+  (with-world self 
+    (let ((box (new 'text (concatenate 'string *xalcyon-copyright-notice*))))
+      (resize-to-scroll box 80 7)
+      (end-of-line box)
+      (add-block self (new 'list (new 'button-config) box) 90 30)
+      (setf %background-color "gray20")
+      (setf *message-history* nil)
+      (message "Welcome to the joystick configuration screen for Xalcyon.")
+      (message "Use your keyboard and mouse with the controls above.")
+      (message "Please note, your controller must be plugged in before you start Xalcyon.")
+      (message "Also, many controllers have an 'analog mode' button that must be toggled")
+      (message "for the analog stick movements to register with the game.")
+      (message "Press ESCAPE (or use the 'return to game' button) to resume playing."))))
 
-;;; a widget to flip between the game screen and setup screen
-
-(define-block flipper screen)
-
-(define-method show-setup-screen flipper ()
-  (setf *scale-output-to-window* nil)
-  (setf %screen *setup-screen*)
-  (setf *world* *setup-screen*)
-  (setf (field-value :background-color *setup-screen*) "gray20")
-  (setf *message-history* nil)
-  (message "Welcome to the joystick configuration screen for Xalcyon.")
-  (message "Use your keyboard and mouse with the controls above.")
-  (message "Please note, your controller must be plugged in before you start Xalcyon.")
-  (message "Also, many controllers have an 'analog mode' button that must be toggled")
-  (message "for the analog stick movements to register with the game.")
-  (message "Press ESCAPE (or use the 'return to game' button) to resume playing."))
-
-(define-method show-game-screen flipper ()
-  (setf *scale-output-to-window* t)
-  (setf %screen *game-screen*)
-  (setf *world* *game-screen*))
-
-(define-method draw flipper ()
-  (when %screen (draw %screen)))
-
-(define-method hit flipper (x y)
-  (when %screen (hit %screen x y)))
-
-(define-method update flipper ()
-  (when %screen
-    (setf *world* %screen)
-    (update %screen)
-    (draw %screen)))
-
-(define-method handle-event flipper (event)
-  (or (handle-event%super self event)
-      (handle-event %screen event)))
-
-(define-method initialize flipper ()
-  (setf *flipper* self)
-  (setf %state nil)
-  (bind-event self '(:f1) :show-setup-screen)
-  ;; people will want to quit the setup screen with Escape:
-  (bind-event self '(:escape) :show-game-screen))
+(define-method show-game-screen setup ()
+  (start-alone *game*))
 
 ;;; starting up the game.
 
 (defun xalcyon ()
-  (setf *world* nil)
-  (let* ((robot (new robot))
-	 (reactor (new reactor))
-	 (flipper (new flipper)))
-    (set-player reactor robot)
-    (bind-event reactor '(:r :control) :reset)
-    (set-location robot 60 60)
-    (setf *game-screen* reactor)
-    (setf *level* (random 5))
-    (let ((letter (random-choose '(:alpha)))); :beta :gamma :delta :epsilon))))
-      (with-world reactor
-	(build-theme (world))
-	(build-alpha (world))
-	(shrink-wrap (world))
-	(announce (get-player (world)) letter)))
-    (let ((setup-screen (new setup)))
-      (setf *setup-screen* setup-screen)
-      (show-game-screen flipper)
-      (setf *blocks* (list flipper)))))
-					;    (play-music (random-choose *soundtrack*) :loop t)
-
+  (let ((robot (new 'robot))
+	(reactor (new 'reactor)))
+    ;; 	(setup (new 'setup)))
+    ;; (setf *setup* setup)
+    ;; (setf *game* reactor)
+    (with-world reactor
+      (bind-event reactor '(:r :control) :reset)
+      ;; (bind-event reactor '(:f1) :show-setup-screen)
+      ;; (bind-event setup '(:escape) :show-game-screen)
+      (let ((letter (random-choose '(:alpha)))); :beta :gamma :delta :epsilon))))
+	(build-theme reactor)
+	(build-alpha reactor)
+	(trim reactor)
+	(add-object reactor robot 60 60)
+	(set-player reactor robot)
+	(start-alone reactor)))))
 
 (define-method reset reactor ()
   (xalcyon))
